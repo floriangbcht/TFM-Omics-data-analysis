@@ -1,0 +1,328 @@
+---
+title: "Data exploration"
+author: "Florian Bouchet"
+output:
+  word_document:
+    reference_docx: "Template.docx"
+  html_document:
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(rmdformats)
+
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=TRUE,
+	             cache=FALSE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
+```
+
+Packages that will be useful:
+
+```{r}
+# Loading packages
+library(dplyr)
+library(TCGAbiolinks)
+library(SummarizedExperiment)
+library(ggplot2)
+```
+
+We download the RNA-seq data from the **TCGA-BRCA** project with the following commands (starting with expression data and associated metadata):
+
+##Specifying the project and that we want transcriptomics data, in particular gene expression data (read counts)
+
+#predata <- GDCquery(project = "TCGA-BRCA", data.category = "Transcriptome Profiling", data.type = "Gene Expression Quantification", workflow.type = "STAR - Counts")
+
+
+##Best to specify files.per.chunk = 100 so that data is partitioned into smaller chunks that are downloaded separately so that one avoid problems related to file size during download
+
+#GDCdownload(predata, files.per.chunk = 100)
+
+
+##Creating a RangedSummarizedExperiment from the downloaded data
+
+#data <- GDCprepare(query = predata)
+
+We can save the *RangedSummarizedExperiment* object (*data*):
+
+#save(data, file = "data.rda")
+
+
+Now we can load the data directly:
+
+```{r}
+# Loading the expression data
+load(file = "data.rda")
+# Looking at the data
+data
+# Looking at the first observations and variables in the sample information table
+head(colData(data), c(5,5))
+```
+
+We have 60660 genes for 1231 samples. There are several assays with read counts and the first one compiles the unstranded raw counts. The two following compiles the stranded raw counts, forward (stranded_first) and reverse (stranded_second), respectively.
+
+Now we download the supplementary clinical information that, among others, compiles the information we are interested in: the immunohistochemistry (IHC) data:
+
+##The BCR xml format is best for not encountering problems during download
+
+#preclindata <- GDCquery(project = "TCGA-BRCA", data.category = "Clinical", data.type = "Clinical Supplement", data.format = "BCR xml")
+
+#GDCdownload(preclindata, files.per.chunk = 100)
+
+#clindata <- GDCprepare_clinic(query = preclindata, clinical.info = "patient")
+
+
+We can save the resulting table (*clindata*):
+
+#save(clindata, file = "clindata.rda")
+
+Now we can load the table directly:
+
+```{r}
+# Loading the supplementary clinical information
+load(file = "clindata.rda")
+# Looking at the first observations and variables
+head(clindata, c(5,5))
+# Dimensions of the table
+dim(clindata)
+```
+
+Here we only have information on 1097 samples. We need to process the data. First of all, in the *data* object, we only keep samples that correspond to primary tumors:
+
+```{r}
+# Selecting samples corresponding to primary tumors only
+data <- data[, colData(data)$definition=="Primary solid Tumor"]
+```
+
+Exploring the data further we can see that there are sometimes several samples for a same patient. We select the first sample only, for each patient:
+
+```{r}
+# Selecting only the first sample for each patient
+data <- data[,!duplicated(colData(data)$patient)]
+```
+
+Now we can keep only those patients in the expression data that are represented in the clinical table:
+
+```{r}
+# Selecting only samples in the expression data that appear in the clinical table
+data <- data[, colData(data)$patient %in% clindata$bcr_patient_barcode]
+data
+```
+
+Now we have 1094 samples, corresponding to 1094 different patients. Still, three more samples appear in the clinical table. We remove them:
+
+```{r}
+# keeping only samples in the clinical table that appear in the expression data
+clindata <- clindata[clindata$bcr_patient_barcode %in% colData(data)$patient,]
+# Reordering the samples in the clinical table to stick to the order of the expression data
+clindata <- clindata[order(match(clindata$bcr_patient_barcode, colData(data)$patient)),]
+# Verifying that number of samples selected and order is similar
+identical(clindata$bcr_patient_barcode, colData(data)$patient)
+```
+
+Now we can start with the preliminar exploration. We see that the variables *breast_carcinoma_estrogen_receptor_status* and *er_level_cell_percentage_category* describe the ER status and level, respectively. We can rename these variables and look at their values:
+
+```{r}
+# Renaming the two variables of the clinical table that corresponds to ER status and level
+clindata <- clindata %>% dplyr::rename(ER_status=breast_carcinoma_estrogen_receptor_status, ER_level=er_level_cell_percentage_category)
+
+# Levels of 'ER_status'
+levels(clindata$ER_status)
+# Levels of 'ER_level'
+levels(clindata$ER_level)
+```
+
+We have missing values (NA, blank cases) for both variables. We also have two cases of indeterminate status. Though the NAs are true unreported values while an indeterminate status simply indicates a lack of certainty, we can pool both the NAs and the indeterminate values under "Indeterminate" since all those cases also have an unspecified level (NA), and thus will not be used further (they are no informative). There is only one exception, a case that shows and indeterminate status but that belongs to the "20-29%" ER level category: there is no apparent reason to be uncertain of it positivity since its level is not even at the boundary between positive and negative status so we can leave it as it is. As for the level, we can rename the NAs as "Unspecified" cases. Both "Indeterminate" and "Unspecified" cases will not be considered in downstream analyses (except the single case mentionned just above). But it is best to keep all data, separating them into meaningful categories.
+
+```{r}
+# Renaming the NAs and transforming to factor
+clindata <- clindata %>% mutate(
+  # Renaming the NAs to "Indeterminate" in the status variable
+  ER_status=if_else(ER_status=="", "Indeterminate", ER_status),
+  ER_status=factor(ER_status, levels = c("Negative", "Positive", "Indeterminate"))# Important to reorder the factor levels
+  ,
+  # Renaming the NAs to "Unspecified" in the level variable
+  ER_level=if_else(ER_level=="", "Unspecified", ER_level),
+  ER_level=as.factor(ER_level)# No need to reorder here
+  )
+```
+
+We can save the clean data (the *RangedSummarizedExperiment* called *data*) and clean clinical table (*clindata*):
+
+#save(data, file = "dataclean.rda")
+
+#save(clindata, file = "clindataclean.rda")
+
+Now we can load them directly:
+
+```{r}
+# Loading the clean expression data
+load(file = "dataclean.rda")
+# Looking at the data
+data
+# Loading the clean clinical table
+load(file = "clindataclean.rda")
+```
+
+We generate a contingency table as well as a bar chart to see the frequency distribution of both variables:
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+# Contingency table
+table(ESTROGEN_STATUS=clindata$ER_status, ESTROGEN_LEVEL=clindata$ER_level)
+
+# Barplot
+ggplot(clindata, aes(x=ER_status, fill = ER_level)) + geom_bar(position = "dodge") +
+  labs(x="\n ER status", y="Frequency \n", title = "Patient absolute frequency counts depending on ER status and level \n", fill = "ER level") +
+  scale_fill_manual(values = c("steelblue", "skyblue", "turquoise", "lightgreen", "khaki", "gold", "orange", "indianred1", "red", "violet", "black")) +
+  theme_gray() +
+  theme(panel.grid.major.x = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(color = "black"), plot.title = element_text(face = "bold", hjust = 0.5), axis.text=element_text(size=12), axis.title=element_text(size=12))
+```
+
+One important consideration is that before 2020 all those tumors with ER level inferior to 10% were considered ER-negative tumors, so that there was no need to separate the "<1%" category (0% category; nowadays considered true negative tumors) from the "1-9%" category (nowadays considered ER-low-positive tumors). Here we can see that the tumors with level "<10%" have either a positive or a negative status, implying that the 54 reported as negative are most probably true negative tumors (ER level of <1%/0%) whereas the 17 reported as positive are most probably tumors with ER level of 1-9%!
+Otherwise, we notice that all tumors with ER level >10% are reported as positive tumors, which is what would be expected. We leave the unspecified cases in their own category.
+
+Based on these considerations we can generate a new variable for ER level using a classification in four categories (as in Voorwerk et al., 2023 but without the ">99%" category since here there is no such level): "<1%", "1-9%", "10-50%", y ">50%":
+
+```{r}
+# New variable for the ER level
+estrogen_level <- case_when(clindata$ER_level %in% levels(clindata$ER_level)[6:10] ~ ">50%",
+                            clindata$ER_level %in% levels(clindata$ER_level)[2:5] ~ "10-50%",
+                            clindata$ER_level == "<10%" & clindata$ER_status=="Positive" ~ "1-9%",
+                            clindata$ER_level == "<10%" & clindata$ER_status=="Negative" ~ "<1%",
+                            .default =  clindata$ER_level)
+
+# Converting the variable to factor
+estrogen_level <- factor(estrogen_level, levels=c("<1%", "1-9%", "10-50%", ">50%", "Unspecified"))
+```
+
+We generate again the contingency table and bar chart:
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+# Contingency table
+table(ESTROGEN_STATUS=clindata$ER_status, ESTROGEN_LEVEL=estrogen_level)
+
+# Barplot
+ggplot(clindata, aes(x=ER_status, fill = estrogen_level)) + geom_bar(position = "dodge") +
+  labs(x="\n ER status", y="Frequency \n", title = "Patient absolute frequency counts depending on ER status and level \n", fill = "ER level") + 
+  scale_fill_manual(values=c("darkgray","steelblue","forestgreen","tomato","black")) + 
+  theme_gray() +
+  theme(panel.grid.major.x = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(color = "black"), plot.title = element_text(face = "bold", hjust = 0.5), axis.text=element_text(size=12), axis.title=element_text(size=12))
+```
+
+The results seems correct.
+
+Next, we will explore the distribution of ER expression using the ESR1 (read counts). Read counts will be normalized using the TMM method to eliminate biases due to library size differences, and further using the log2 CPM transformation so that the adjusted counts are scaled. First, we must check the read proportions for the stranded first and second assays to verify if the original libraries used for sequencing where stranded or unstranded.
+
+In a few online Biostars forums some users affirm that unstranded libraries were used for the TCGA-BRCA project (also TCGA data in general). The TCGA program started in 2006 and it seems that RNA-seq data for the TCGA-BRCA project were generated before 2012; at that time using stranded libraries, especially reverse stranded ones, was not common yet. Finally, the GDC user guide never specifies the type of libraries used, just that the STAR count pipeline always generates stranded counts, implying that even for originally unstranded counts the stranded assays will be computed. It seems that TCGA-BRCA RNA-seq data were generated using unstranded libraries but it is important to be sure of it as it can have some impact on the downstream analyses:
+
+```{r}
+# Read counts for each strand (for each sample)
+# For each sample the read count of all genes are added up so that the total read count for each sample is obtained
+strand1 <- colSums(assay(data,"stranded_first"))
+strand2 <- colSums(assay(data,"stranded_second"))
+# Total count (both strands) for each sample
+totalcounts <- strand1 + strand2
+# Bivariate plot using proportion of read counts of each strand
+ggplot() + geom_point(aes(x = strand1/totalcounts, y = strand2/totalcounts), shape = 21, size = 3, color = "black", fill = "white") +
+  coord_cartesian(xlim=c(0,1)) + 
+  geom_hline(yintercept = 0.5, colour = "red", linetype = "dotted", linewidth = 1) + 
+  geom_vline(xintercept = 0.5, colour = "red", linetype = "dotted", linewidth = 1) + 
+  labs(x = "\n Forward strand count proportion", y = "Reverse strand count proportion \n") + 
+  theme_bw() + 
+  theme(panel.grid.minor=element_line(linewidth = 1), panel.grid.major = element_line(linewidth = 1), axis.text=element_text(size=12)) + 
+  scale_x_continuous(breaks = seq(0, 1, 0.1)) + 
+  scale_y_continuous(breaks = seq(0, 1, 0.1))
+# Number of outliers (being restrictive)
+table((strand1/totalcounts > 0.55 | strand1/totalcounts < 0.45) |
+              (strand2/totalcounts > 0.55 | strand2/totalcounts < 0.45))
+```
+
+What we see is that 1090 out of 1094 samples show equal read count proportions among the two strands, that is to say that in 99.6% of the samples about 50% of reads map to each strand, which is consistent with unstranded RNA-seq. Only four are considered outliers and most probably result from technical/processing artifacts. This is not a problem since it appears that these data were indeed originally unstranded.
+
+Now we can proceed to the next step of normalizing and exploring ESR1 expression:
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+# Creating a DGEList object with normalization factors
+listdge <- edgeR::DGEList(assay(data))
+listdge <- edgeR::calcNormFactors(listdge, method = "TMM")
+
+# We can save this object (*listdge*)
+#save(listdge, file="listdge.rda")
+
+# Creating a variable with the normalized reads for ESR1
+countsfiltrnorm <- edgeR::cpm(listdge, log = T)[rownames(data)[grep("ENSG00000091831",
+    rownames(data))],]
+
+# Table with variables of interest
+countsER <- data.frame(counts=countsfiltrnorm, ER_level=estrogen_level)
+
+# We can save this table (*countsER*)
+#save(countsER, file="countsER.rda")
+
+# Boxplots of ESR1 depending on the ER level
+ggplot(countsER, aes(x=ER_level, y=counts)) + geom_boxplot(fill=c("darkgray","steelblue","forestgreen","tomato","black"), linewidth = 0.7, outlier.shape = 21, outlier.size = 2, outlier.color = "black", outlier.fill = "white") + 
+  labs(x = "\n ER level", y = "Read count \n", title = "ESR1 read count distribution depending on the ER level \n") + 
+  theme_gray() + 
+  theme(panel.grid.major.x = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(color = "black"), plot.title = element_text(face = "bold", hjust = 0.5), axis.text=element_text(size=12), axis.title=element_text(size=12)) +
+  scale_y_continuous(breaks = seq(-2, 12, 2))
+```
+
+We observe that the distribution of counts for the ESR1 gene matches relatively well with ER level. Samples with ER- tumors have a distribution with low median while samples with ER+ tumors generally have higher counts.
+Regarding the ER level, the general trend is that the more counts the higher the ER level. But there is great variation and some outliers. 
+Leaving aside the "<1%" and "Unspecified" categories, the higher the ER level, the less variance there is in the counts. Therefore, the variance is highest in the "1-9%" category. It might be due to the respective sample size since in that case the higher the ER level, the larger the sample size.
+
+We can test whether there are significant differences between the different ER level categories (omiting the "Unspecified"). We start with an ANOVA.
+
+```{r}
+# ANOVA model
+model <- lm(countsER$counts[countsER$ER_level!="Unspecified"]~countsER$ER_level[countsER$ER_level!="Unspecified"])
+
+# Checking if residuals deviate from a normal distribution or no
+shapiro.test(model$residuals)
+```
+
+The residuals indeed deviate from a normal distribution (p-value highly significant), so we will apply a non-parametric Kruskal-Wallis test:
+
+```{r}
+# Kruskal-Wallis test
+kruskal.test(countsER$counts[countsER$ER_level!="Unspecified"]~countsER$ER_level[countsER$ER_level!="Unspecified"])
+```
+
+The test is highly significant (p-value < 2.2e-16) indicating global among group differences.
+We keep going with post-hoc test, here using Dunn's test (with Bonferroni correction).
+
+```{r}
+# Paired Dunn's test
+dunn.test::dunn.test(countsER$counts[countsER$ER_level!="Unspecified"], countsER$ER_level[countsER$ER_level!="Unspecified"], method = "Bonferroni")
+```
+
+The ">50%" category significantly differs from every other category. The "10-50%" category also differs from the "<1%" category.
+The "1-9%" category doesn't differ from the "<1%" category nor the "10-50%" one.
+It can be explicated by the high variation observed in the "1-9%" category that completely overlaps with those of the "<1%" and "10-50%" categories.
+
+We can isolate the "Unspecifed" category and check if it could match with one of the defined category by superimposing horizontal lines describing the half-distances between the medians of the categories.
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+# Medians of the categories
+medians <- sapply(levels(countsER$ER_level)[-5], FUN=function(x){median(countsER$counts[countsER$ER_level==x])})
+# Averages of adjacent medians
+(cutpts <- sapply(1:3, FUN=function(x){mean(medians[c(x,x+1)])}))
+# Final boxplot
+ggplot(countsER[countsER$ER_level=="Unspecified",], aes(x=ER_level, y=counts)) + geom_boxplot(fill = "darkgray",  linewidth = 0.75) + 
+  labs(x = "",  y = "Read count \n", title = "ESR1 read count distribution for patients with unspecified ER level \n", colour = NULL) + 
+  theme_classic() + 
+  theme(legend.position = c(0.85,0.15), legend.background = element_rect(colour = "black", fill = "white"), legend.text=element_text(size=12), plot.title = element_text(face = "bold", hjust = 0.5), axis.text=element_text(size=12), axis.title=element_text(size=12)) + 
+  theme(axis.line = element_line(color = "black"), axis.text.x = element_blank(), axis.ticks.x=element_blank()) + scale_y_continuous(breaks = seq(-2, 12, 2)) + 
+  geom_hline(aes(yintercept = cutpts[1], color = "<1% – 1-9%"), linewidth = 1) + 
+  geom_hline(aes(yintercept = cutpts[2], colour = "1-9% – 10-50%"), linewidth = 1) + 
+  geom_hline(aes(yintercept = cutpts[3], colour = "10-50% – >50%"), linewidth = 1) + 
+  scale_color_manual(values = c("10-50% – >50%" = "tomato", "1-9% – 10-50%" = "steelblue", "<1% – 1-9%" = "forestgreen"))
+```
+
+As we could already observe in the original boxplot, the "Unspecified" category appears very variable with values spreading across the entire expression range of other categories. It seems not feasible to reclassify these cases so we will keep them separate.
