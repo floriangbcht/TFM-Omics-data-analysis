@@ -170,7 +170,18 @@ data
 load(file = "clindataclean.rda")
 ```
 
-We generate a contingency table as well as a bar chart to see the frequency distribution of both variables:
+We can take a look at some biological/social information about the patients included:
+
+```{r}
+# Age
+table(clindata$age_at_initial_pathologic_diagnosis)
+# Sex
+table(clindata$gender)
+# Race
+table(clindata$race_list)
+```
+
+We generate a contingency table as well as a bar chart to see the frequency distribution of both variables of interest (ER level and status):
 
 ```{r, fig.height=5, fig.width=10, out.width="100%"}
 # Contingency table
