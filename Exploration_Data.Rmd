@@ -226,11 +226,11 @@ ggplot(clindata, aes(x=ER_status, fill = estrogen_level)) + geom_bar(position = 
   theme(panel.grid.major.x = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(color = "black"), plot.title = element_text(face = "bold", hjust = 0.5), axis.text=element_text(size=12), axis.title=element_text(size=12))
 ```
 
-The results seems correct.
+The results seem correct.
 
-Next, we will explore the distribution of ER expression using the ESR1 (read counts). Read counts will be normalized using the TMM method to eliminate biases due to library size differences, and further using the log2 CPM transformation so that the adjusted counts are scaled. First, we must check the read proportions for the stranded first and second assays to verify if the original libraries used for sequencing where stranded or unstranded.
+Next, we will explore the distribution of ER expression using the ESR1 (read counts). Read counts will be normalized using the TMM method to eliminate biases due to library size differences, and further using the log2 CPM transformation so that the adjusted counts are scaled. First, we must check the read proportions for the stranded first and second assays to verify if the original libraries used for sequencing were stranded or unstranded.
 
-In a few online Biostars forums some users affirm that unstranded libraries were used for the TCGA-BRCA project (also TCGA data in general). The TCGA program started in 2006 and it seems that RNA-seq data for the TCGA-BRCA project were generated before 2012; at that time using stranded libraries, especially reverse stranded ones, was not common yet. Finally, the GDC user guide never specifies the type of libraries used, just that the STAR count pipeline always generates stranded counts, implying that even for originally unstranded counts the stranded assays will be computed. It seems that TCGA-BRCA RNA-seq data were generated using unstranded libraries but it is important to be sure of it as it can have some impact on the downstream analyses:
+In a few online Biostars forums some users affirm that unstranded libraries were used for the TCGA-BRCA project (also TCGA data in general). The TCGA program started in 2006 and it seems that RNA-seq data for the TCGA-BRCA project were generated before 2012; at that time using stranded libraries, especially reverse stranded ones, was not common yet. Finally, the GDC user guide never specifies the type of libraries used, just that the STAR count pipeline always generates stranded counts, implying that even for originally unstranded counts the stranded assays will be computed. In any case, the GDC user guide considers all reads as unstranded for the STAR count pipeline. It seems that TCGA-BRCA RNA-seq data were generated using unstranded libraries but it is important to be sure of it as it can have some impact on the downstream analyses:
 
 ```{r}
 # Read counts for each strand (for each sample)
