@@ -18,6 +18,7 @@ Here is a breakdown of the included files:
 - **classifvskmeans.R** is a custom function for comparing the HCLUST-derived alternative classifications with those derived from K-means (for these specific data).
 - **grouptest.R** is a custom function for computing between group differences according to the number of categories, data normality, and homoscedasticity. It includes arguments for computing other comparative results.
 
+
 **WARNING: SOME FILES ARE NOT PROVIDED BECAUSE OF EXCEEDING MAXIMUM FILE SIZE ALLOWED ON GITHUB BUT ARE HERE DESCRIBED ANYWAY**
 - **data.rda** and **clindata.rda** correspond to the prepared *SummarizedExperiment* object and clinical table respectively obtained just after the initial data download. These are the unprocessed data.
 - **dataclean.rda** and **clindataclean.rda** correspond to the *SummarizedExperiment* object and clinical table respectively obtained after the preprocessing step.
