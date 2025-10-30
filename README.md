@@ -16,7 +16,7 @@ Here is a breakdown of the included files:
 - **colplotclust.R** is a custom function for attributing colors to individual points or whole category depending on the classification.
 - **plotclust.R** is a custom function for for generating a boxplot for a specific variable (ESR1 expression or other) or a bivariate plot that can be of any variable Y vs. variable X (or specifically ESR1 expression vs. index), depending on the classification.
 - **classifvskmeans.R** is a custom function for comparing the HCLUST-derived alternative classifications with those derived from K-means (for these specific data).
-- **classifvskmeans.R** is a custom function for computing between group differences according to the number of categories, data normality, and homoscedasticity. It includes arguments for computing other comparative results.
+- **grouptest.R** is a custom function for computing between group differences according to the number of categories, data normality, and homoscedasticity. It includes arguments for computing other comparative results.
 
 **WARNING: SOME FILES ARE NOT PROVIDED BECAUSE OF EXCEEDING MAXIMUM FILE SIZE ALLOWED ON GITHUB BUT ARE HERE DESCRIBED ANYWAY**
 - **data.rda** and **clindata.rda** correspond to the prepared *SummarizedExperiment* object and clinical table respectively obtained just after the initial data download. These are the unprocessed data.
