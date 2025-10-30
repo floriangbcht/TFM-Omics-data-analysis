@@ -1,0 +1,432 @@
+---
+title: "Clustering"
+author: "Florian Bouchet"
+output:
+  word_document:
+    reference_docx: "Template.docx"
+  html_document:
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(rmdformats)
+
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=TRUE,
+	             cache=FALSE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
+```
+
+Packages that will be useful:
+
+```{r}
+# Loading packages
+library(dplyr)
+library(factoextra)
+library(cluster)
+library(mclust)
+library(ggplot2)
+library(cowplot)
+
+# Loading functions
+source(file = "plotclust.R")
+source(file = "colplotclust.R")
+source(file = "grouptest.R")
+```
+
+We load the data that will be used:
+
+```{r}
+# Loading the "countsER" table
+load(file = "countsER.rda")
+head(countsER)
+```
+
+We will applicate several unsupervised clustering models on the ESR1 normalized counts to evaluate if natural groups would match the traditional IHC categories. Because we work with a single variable (one-dimensional data) the classical pros and cons of each clustering method do not really hold or are limited. Here the selection of models will be restricted to hierarchical clustering with Ward (D2), Average, and Complete linkages, K-means, and GMM. The three first ones are the most popular among hierarchical clustering and generally tends to result in compact clusters. K-means, though it can produce results highly similar to Ward's method due to its underlying process of minimizing intra-group variance, is worth testing. GMM is also worth testing since it is a density method and therefore probabilistic, different from the deterministic hierarchical clustering and also different from K-means.
+
+We first generate a new table that omits the "Unspecified" cases.
+
+```{r}
+# New table without the "Unspecified" cases
+countsERmod <- countsER[countsER$ER_level!="Unspecified",]
+countsERmod$ER_level <- droplevels(countsERmod$ER_level)
+```
+
+<br>
+
+## CLUSTERING WITH HIERARCHICAL CLUSTERING
+
+We need to determine what could be the optimal K (number of clusters). In that context, we will use the Elbow method, Silhouette method, and Gap statistics.
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+# Elbow method for each linkage method
+for(met in c("ward.D2", "average", "complete")){
+  print(fviz_nbclust(as.matrix(countsERmod$counts), hcut, hc_method = met, method = "wss"))
+}
+
+# Silhouette method for each linkage method
+for(met in c("ward.D2", "average", "complete")){
+  print(fviz_nbclust(as.matrix(countsERmod$counts), hcut, hc_method = met, method = "silhouette"))
+}
+
+# Gap statistics for each linkage method
+for(met in c("ward.D2", "average", "complete")){
+  cat("\n", "TEST WITH METHOD =", met, "\n")
+  set.seed(42)# Fixing a seed for reproducibility (since bootstrap will be used)
+  gapclust <- clusGap(as.matrix(countsERmod$counts), FUNcluster = hcut, hc_method = met, K.max = 10, B = 500, d.power = 2)# d.power=2 because squared distances must be used following Tibshirani et al.; B=500 so that bootstrap is repeated 500 times and stability is ensured
+  print(gapclust)# Written results
+  print(fviz_gap_stat(gapclust), maxSE=list(method="Tibs2001SEmax",SE.factor=1))# Plot results; method="Tibs2001SEmax" is the selection critera suggested by Tibshirani et al., but it is the same than the one used by default
+}
+```
+
+Based on the Elbow method, K = 2 or 3 for Ward D2, K = 2 or 4 for Average, and K = 2-5 for Complete. We notice that the curve is irregular for both Average and Complete since the total within sum of square (WSS) rise again at K = 3 before a second drop at K = 4 in the first whereas the drop is almost perfectly continuous and linear from K = 2 to K = 5 in the second. 
+Based on the Silhouette method K = 2 for all methods.
+Based on the Gap statistics K = 1 (no cluster) for all methods. 
+The Gap statistics and Silhouette method are more conservative and tend to points to smaller K while the Elbow method is the less restrictive and WSS generally decreases as K increases. However, the irregularity in the curves for Average and Complete makes the evaluation of WSS somewhat complicated and it seems best to consider K = 2, which is also supported by the Silhouette method. In the case of Ward D2 it can be interesting to consider both K = 2 and K = 3, the latter because the WSS curve has no irregularities and that this is really after K = 3 that the loss of WSS is minimal.
+
+Now we can compute the clusters for all methods taking into account these number of clusters, and explore the results. We will use our custom function *plotclust()* for generating plots:
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+# Empty table
+groups <- data.frame(matrix(NA, nrow = dim(countsERmod)[1], ncol = 4))
+colnames(groups) <- c("wardD2_3","wardD2_2","average2","complete2")
+
+# Loop for computing results for each linkage method and save them in the corresponding column of the table
+for(met in c("ward.D2", "average", "complete")){
+  # Clustering and dendogram
+  hc <- hclust(dist(as.matrix(countsERmod$counts)), method = met)
+  plot(hc, labels = countsERmod$ER_level, hang=-1, xlab='', cex=0.5, main=paste("Clustering with linkage method =", met))
+  
+  # Saving the clusters into the table
+  if(met=="ward.D2"){
+    clust <- data.frame(factor(cutree(hclust(dist(as.matrix(countsERmod$counts)), method = met), k = 3)),
+                        factor(cutree(hclust(dist(as.matrix(countsERmod$counts)), method = met), k = 2)))
+    groups[,1:2] <- clust
+  }
+  else{
+    clust <- factor(cutree(hclust(dist(as.matrix(countsERmod$counts)), method = met), k = 2))
+    groups[,grep(met, colnames(groups))] <- clust
+  }
+}
+
+
+# Visualizing the four classifications using boxplots
+source(file = "plotclust.R") # Loading the function 'plotclust'
+
+plotlist <- lapply(colnames(groups), FUN = function(classif){
+  plotclust(data = groups, xvar = classif, datay = countsERmod, yvar = "counts", type = "boxplot")
+})
+
+# Final figure
+plot_grid(plotlist=plotlist, nrow = 2)
+```
+
+The three dendogram appears quite different from one method to another. With so many samples it is quite difficult to look closely at how the traditional categories (IHC) are grouped. This will be explored later. Regarding the boxplots, we observe that for all methods, the highest ESR1 values correspond to cluster 1 whereas the lowest values correspond to cluster 2. For the Ward D2 clustering with three groups the medium values correspond to cluster 3. We can readily rename these classifications, transform them to factor, and perform better visual comparisons. We will use our custom function *colplotclust()* for attributing correct colors to the categories in each classification:
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+# Renaming the classifications and transforming them to factor
+groups <- groups %>% mutate(
+  # Ward D2 with three groups
+  wardD2_3=c("High","Low","Moderate")[wardD2_3],
+  wardD2_3=factor(wardD2_3, levels=c("Low","Moderate","High"))# Reordering the levels
+  ,
+  # Ward D2 with two groups
+  wardD2_2=as.factor(c("ModToHigh", "LowToMod")[wardD2_2])# No need to reorder the levels
+  ,
+  # Average with two groups
+  average2=as.factor(c("ModToHigh", "LowToMod")[average2])# No need to reorder the levels
+  ,
+  # Complete with two groups
+  complete2=as.factor(c("ModToHigh", "LowToMod")[complete2])# No need to reorder the levels
+  )
+
+# Loading the function 'colplotclust'
+source(file = "colplotclust.R")
+
+# Visualizing the four classifications using boxplots and bivariate plots
+for(classif in colnames(groups)){
+  
+  # Boxplot
+  clustcol <- colplotclust(classif, groups, type = "group")
+  p1 <- plotclust(data = groups, xvar = classif, datay = countsERmod, yvar = "counts", col = clustcol$col, type = "boxplot", title = F)
+  
+  # Bivariate plot of read counts vs. indices
+  clustcol <- colplotclust(classif, groups, type = "single")
+  p2 <- plotclust(data = groups, xvar = classif, datay = countsERmod, yvar = "counts", col = clustcol$col, type = "biplotESR1", title = F)
+    
+  # Grid with the two plots
+  grid <- plot_grid(plotlist=list(p1, p2), nrow = 1)
+  # Common title
+  title <- ggdraw() + draw_label(paste("Classification:",classif,"\n"), fontface='bold')
+  # Final figure
+  print(plot_grid(title, grid, ncol=1, nrow = 2, rel_heights=c(0.1, 1)))
+  
+  # Cluster sizes
+  cat("Classification:", classif)
+  print(table(groups[,classif]))
+  cat("\n")
+}
+```
+
+The binary classification obtained with Ward D2 and Average are extremely similar, and only 6 observations are not attributed to the same cluster. However, the binary classification obtained with Complete is distinct from the others. We notice that with Ward D2 the cutoff is lower than with Complete (and than Average, to a less extent), so that the separation seems clearer. The Ward D2 ternary classification shows a somewhat better separation between the low and moderate values (and high ones), than between the high and moderate values. Since the Average binary classification is slightly more similar to the Complete one than is the Ward D2 one, we can readily discard the former.
+
+We can add these alternative classifications to the *countsERmod* table, except the Average one:
+
+```{r}
+# Adding the classifications to the table
+countsERmod <- countsERmod %>% mutate(
+  # Ward D2 with three groups
+  wardD2_3=groups$wardD2_3,
+  # Ward D2 with two groups
+  wardD2_2=groups$wardD2_2,
+  # Complete with two groups
+  complete2=groups$complete2)
+```
+
+<br>
+
+## CLUSTERING WITH K-MEANS
+
+As for hierarchical clustering, we need to find the best K for K-means:
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+# Elbow method 
+set.seed(42)# Fixing a seed for reproducibility (since random starting centroids wille be calculated)
+fviz_nbclust(as.matrix(countsERmod$counts), kmeans, iter.max = 10000, nstart = 100, method = "wss")# 10K iterations to ensure to find a global optimum and not being restricted by the number of iterations; nstart=100 so that we can ensure to have more stable results, since the analysis is repeated for 100 different starting centroids
+
+# Silhouette method
+set.seed(42)
+fviz_nbclust(as.matrix(countsERmod$counts), kmeans, iter.max = 10000, nstart = 100, method = "silhouette")
+
+# Gap statistics
+set.seed(42)
+gapclust <- clusGap(as.matrix(countsERmod$counts), FUNcluster = kmeans, iter.max = 10000, nstart = 100, K.max = 10, B = 500, d.power = 2)
+print(gapclust)
+print(fviz_gap_stat(gapclust), maxSE=list(method="Tibs2001SEmax",SE.factor=1))
+```
+
+If we repeat multiple times these analyses (with different seeds) the results stay the same, giving support to their stability. We can verify if our results are really optimal by recomputing the curve of WSS (Elbow method) based on the K-means++ algorithm, that only select the first centroid at random and select the others probabilistically.
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+# Elbow method
+set.seed(42)
+# Loop that computes the total within-group sum of squares for K between 1 and 10 
+within_ssplus <- c()
+for (i in 1:10) {
+  within_ssplus[i] <- sum(ClusterR::KMeans_rcpp(as.matrix(countsERmod$counts), clusters = i, initializer = "kmeans++", num_init = 100)$WCSS_per_cluster)# KMeans_rcpp allows initializing with the K-means++ algorithm; the analysis is also repeated for 100 different starting centroids
+}
+
+# Final plot
+plot(1:10, within_ssplus, type="b", xlab="Number of clusters (k)",
+     ylab="Total within-group sum of squares", main="Total within-group variability depending on k", yaxt="n", pch=16, col="steelblue")
+axis(1, 1:10)
+axis(2, seq(0, 4000, 1000))
+```
+
+The results are the same than using the base K-means algorithm. There is convergence. We can keep going with base K-means results.
+Getting back to the results themselves, the Elbow method indicates K = 2 or 3. We notice that the curve is extremely similar to the one previously produced using hierarchical clustering with Ward D2. 
+Based on the Silhouette method K = 2.
+Based on the Gap statistics K = 1 (no cluster).
+As for hierarchical clustering with Ward D2 these results rather point to an optimal number of clusters of 2 but it can be worth also keeping K = 3. Indeed, here again the WSS curve has no irregularities and this is really after K = 3 that the loss of WSS is minimal.
+
+We now compute the clusters and explore the results:
+
+```{r}
+# K-means models with K = 2 and K = 3
+for(k in c(2,3)){
+  set.seed(42)
+  groups[[paste0("k_means", k)]] <- factor(kmeans(countsERmod$counts, centers = k, iter.max = 10000, nstart = 100)$cluster)
+}
+
+# Visualizing the two classifications using boxplots
+plotlist <- lapply(colnames(groups[,c(5,6)]), FUN = function(classif){
+  plotclust(data = groups, xvar = classif, datay = countsERmod, yvar = "counts", type = "boxplot")})
+# Final figure
+plot_grid(plotlist=plotlist, nrow = 1)
+```
+
+We observe that for both models the highest ESR1 values correspond to cluster 2. The lowest values correspond to cluster 1 in the model with K = 2 and cluster 3 in the model with K = 3. The medium values correspond to cluster 1 in the model with K = 3. We can readily rename these classifications, transform them to factor, and perform better visual comparisons:
+
+```{r}
+# Renaming the classifications and transforming them to factor
+groups <- groups %>% mutate(
+  # Kmeans with three groups
+  k_means3=c("Moderate","High","Low")[k_means3],
+  k_means3=factor(k_means3, levels=c("Low","Moderate","High"))# Reordering the levels
+  ,
+  # Kmeans with two groups
+  k_means2=as.factor(c("LowToMod", "ModToHigh")[k_means2])# No need to reorder the levels
+)
+
+
+# Loading the custom function 'classifvskmeans'
+source(file = "classifvskmeans.R")
+
+# Visualizing and comparing the classifications (hierachical clustering vs Kmeans) using boxplots
+for(classif in colnames(groups)[1:4]){
+  classifvskmeans(dataclassif = groups, classif = classif, datay = countsERmod, type = "boxplot")
+}
+
+# Visualizing and comparing the classifications (hierachical clustering vs Kmeans) using bivariate plots
+for(classif in colnames(groups)[1:4]){
+  classifvskmeans(dataclassif = groups, classif = classif, datay = countsERmod, type = "biplot")
+}
+
+# Cluster sizes
+for(k in c(2,3)){
+  cat("Classification:", paste0("k_means", k))
+  print(table(groups[[paste0("k_means", k)]]))
+  cat("\n")
+}
+```
+
+We observe that both K-means classifications are different from those produced with hierarchical clustering. Compared to the Ward D2 ternary classification, K-means ternary classification show an almost perfectly similar "Low" cluster but its "Moderate" cluster includes much more observations, with higher values, so that the cutoff betwwen the "Moderate" and "High" clusters is higher (the "Higher" cluster therefore includes less observations). The same occurs when looking at the two binary classifications (more observations with higher values in the "ModToHigh" cluster of K-means, so the cutoff is higher). Compared the Complete binary classification, this is the opposite.
+
+We can add the two K-means alternative classifications to the *countsERmod* table:
+
+```{r}
+# Adding the classifications to the table
+countsERmod <- countsERmod %>% mutate(
+  # K-means with two groups
+  kmeans2=groups$k_means2,
+  # K-means with three groups
+  kmeans3=groups$k_means3)
+```
+
+<br>
+
+## CLUSTERING WITH GAUSSIAN MIXTURE MODEL
+
+For GMM it is not needed to specify the number of clusters as they are determined through Maximum-Likelihood.
+However it can be interesting to take a look at the distribution of the counts since GMM relies on multiple gaussian distributions:
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+# Density histogram
+ggplot(countsERmod, aes(x = counts)) + geom_histogram(aes(y = after_stat(density)), binwidth = 1, colour = "black", fill = "cadetblue") +
+  geom_density(colour = "red", linewidth = 1) +
+  labs(x = "\n Read count", y = "Density \n", title = "Density histogram of read counts \n") +
+  theme_gray() + 
+  theme(panel.grid.major.x = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(color = "black"), plot.title = element_text(face = "bold", hjust = 0.5), axis.text=element_text(size=12), axis.title=element_text(size=12)) +
+  scale_x_continuous(breaks = seq(-2, 12, 2))
+```
+
+At first glance it seems that our data match with a double distribution (2 natural groups).
+We now apply the GMM model on our data and explore the results:
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+# GMM model
+gmmmod <- Mclust(countsERmod$counts)
+summary(gmmmod)
+
+groups <- groups %>% mutate(
+  # GMM
+ gmm=factor(gmmmod$classification))
+
+# Boxplot
+plotclust(data = groups, xvar = "gmm", datay = countsERmod, yvar = "counts", type = "boxplot")
+```
+
+The best result appears to be a classification in two groups. We observe that it is the exact same than the K-means binary classification, with lowest values corresponding to cluster 1 (79 observations) and highest values corresponding to cluster 2 (390 observations). It is not necessary to compare this classification with the others, no to add it to the table *countsERmod*. We can simply rename the K-means binary classification in the table so that one knows the GMM classification is the same:
+
+```{r}
+# Renaming the last column in the countsERmod table
+countsERmod <- countsERmod %>% dplyr::rename(kmeans_GMM2=kmeans2)
+
+# Reordering the columns in the table
+countsERmod <- countsERmod %>% relocate(kmeans3, .after = wardD2_3)
+colnames(countsERmod)
+```
+
+## FINAL COMPARISONS AMONG THE ALTERNATIVE CLASSIFICATIONS
+
+Now that we have all alternative classifications at hand we can use the ARI to see how truly similar they are, quantitatively, comparing among the two ternary and among the three binary:
+
+```{r}
+# Comparisons among ternary classifications
+adjustedRandIndex(countsERmod$wardD2_3, countsERmod$kmeans3)
+
+# Comparisons among binary classifications
+bincombin <- combn(colnames(countsERmod)[c(5:7)], 2)
+for(num in 1:ncol(bincombin)){
+  cat(paste0(bincombin[1,num]," vs. ",bincombin[2,num],":"), adjustedRandIndex(countsERmod[,bincombin[1,num]], countsERmod[,bincombin[2,num]]), "\n")
+}
+
+# Comparing Ward D2 and Average binary classifications
+adjustedRandIndex(groups$wardD2_2, groups$average2)
+```
+
+These results confirm that the two ternary classifications are markedly different (ARI < 0.5) whereas the Ward D2 and Average binary classifications are extremely similar (0.93). The Ward D2 and Complete binary classifications are moderately similar (ARI = 0.68), whereas the K-means/GMM binary classification is almost as similar (quite highly) to the former (ARI = 0.85) than to the latter (ARI = 0.82). We could remove the K-means/GMM binary classification since it is highly similar to the two others but the fact that two different algorithms gave the same classification is a signal that is a somewhat robust classification. We will thus keep all three binary classifications.
+
+We can save the table *countsERmod*:
+
+#save(countsERmod, file="countsERmod.rda")
+
+Now we can load it directly:
+
+```{r}
+# Loading the table *countsERmod*
+load(file = "countsERmod.rda")
+```
+
+
+## COMPARISONS BETWEEN THE ALTERNATIVE CLASSIFICATIONS AND THE TRADITIONAL IHC STRATIFICATION
+
+We can compare these alternative classifications to the IHC categories, again using the ARI:
+
+```{r}
+# Loop for comparing alternative classifications and IHC categories
+for(classif in colnames(countsERmod)[3:7]){
+  cat("traditional IHC vs", classif)
+  print(table(countsERmod$ER_level, countsERmod[,classif]))
+  cat("\n", "ARI:", adjustedRandIndex(countsERmod$ER_level, countsERmod[,classif]),"\n", "\n")
+}
+```
+
+The K-means ternary classification is the most dissimilar to the IHC stratification (ARI = 0.27) whereas the K-means/GMM binary classification is the most similar (ARI = 0.63). Ward D2 and Complete binary classifications, compared to the IHC stratification, show a similar ARI (0.57-0.58). We observe that the ternary classifications are overall less similar to the IHC stratification than the binary ones.
+
+In summary, it seems that ESR1 expression is not highly representative of the IHC categories. This is something that could have been anticipated since the variance and overlap was high when we looked at the expression of ESR1 depending on the IHC subgroups. It also makes sense biologically speaking because here, ESR1 expression is averaged across multiple cells (bulk tissue samples) and is thus not necessarily representative of the proportion of cells that are actually stained for this receptor.
+
+In summary, there are various patterns of natural groupings in these data (ESR1 expression), though a binary classification appeared multiple times. We will evaluate further these alternative classifications.
+
+We start with visualizing again all investigated classifications (the traditional IHC stratification + the alternative classifications):
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+# Generating a boxplot for each investigated classification
+plotlist <- lapply(colnames(countsERmod)[-1], FUN = function(classif){
+  
+  colbox <- colplotclust(classif = classif, data = countsERmod, type = "group")
+  
+  plotclust(data = countsERmod, xvar = classif, yvar = "counts", col = colbox$col, title = F, type = "boxplot") +
+    labs(x = paste("\n", classif, "\n"), y = "")
+})
+
+# Grid with all the plots
+grid <- plot_grid(plotlist=plotlist, nrow = 2)
+# Common title
+title <- ggdraw() + draw_label("ESR1 expression \n", fontface='bold')
+# Final figure
+plot_grid(title, grid, ncol=1, nrow = 2, rel_heights=c(0.1, 1))
+```
+
+Now we can test if the differences are significant or not among categories, for each classification. We will use our custom function *grouptest()* for that purpose:
+
+```{r}
+# Loading the 'grouptest' function
+source(file = "grouptest.R")
+
+# Applying the function to all investigated classifications
+for(cluster in colnames(countsERmod)[-1]){
+  grouptest(yvar = "counts", cluster = cluster, data = countsERmod) # We only want the results for the group comparison tests
+}
+```
+
+We had already seen the results for the IHC categories. The categories "<1%", "10-50%", and ">50%" significantly differ from each other. Furthermore, the ">50%" category differs from the "1-9%" category. But this latter neither differs from the "<1%" nor from the "10-50%" categories.
+Regarding the alternative classifications, all categories always significantly differ from one other. The *kmeans3* classification gives more significant results than the *wardD2_3* classification. Regarding the binary classifications it seems that *complete2* results in the most significant differences.
+
+
