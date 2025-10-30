@@ -16,7 +16,6 @@ Here is a breakdown of the included files:
 - **colplotclust.R** is a custom function for attributing colors to individual points or whole category depending on the classification.
 - **plotclust.R** is a custom function for for generating a boxplot for a specific variable (ESR1 expression or other) or a bivariate plot that can be of any variable Y vs. variable X (or specifically ESR1 expression vs. index), depending on the classification.
 - **classifvskmeans.R** is a custom function for comparing the HCLUST-derived alternative classifications with those derived from K-means (for these specific data).
-- **voorwerkplots.R** is a custom function for generating boxplots similar to those in Voorwerk et al. (2023) from expression data and cell type abundance data (obtained from deconvolution analysis).
 - **classifvskmeans.R** is a custom function for computing between group differences according to the number of categories, data normality, and homoscedasticity. It includes arguments for computing other comparative results.
 
 **WARNING: SOME FILES ARE NOT PROVIDED BECAUSE OF EXCEEDING MAXIMUM FILE SIZE ALLOWED ON GITHUB BUT ARE HERE DESCRIBED ANYWAY**
