@@ -15,7 +15,7 @@ Here is a breakdown of the included files:
 - **countsERmod.rda** is a seven-columned table that contains, for each patient, the TMM-normalized log CPM read count of the ESR1 gene as well as the category to which the patient belongs for the traditional IHC classification as well as the five alternative classifications kept at the end of the clustering step.
 - **colplotclust.R** is a custom function for attributing colors to individual points or whole category depending on the classification.
 - **plotclust.R** is a custom function for for generating a boxplot for a specific variable (ESR1 expression or other) or a bivariate plot that can be of any variable Y vs. variable X (or specifically ESR1 expression vs. index), depending on the classification.
-- **classifvskmeans.R** is a custom function for comparing the HCLUST-derived alternative classifications with those derived from K-means (for these specific data).
+- **classifvskmeans.R** is a custom function for comparing the HCLUST-derived alternative classifications with those derived from K-means (for these specific data). Requires *plotclust()* and *colplotclust()*.
 - **grouptest.R** is a custom function for computing between group differences according to the number of categories, data normality, and homoscedasticity. It includes arguments for computing other comparative results.
 
 
