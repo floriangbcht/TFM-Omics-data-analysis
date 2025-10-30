@@ -11,6 +11,13 @@ Here is a breakdown of the included files:
 - **Exploration_Data.Rmd** contains the code necessary to download the TCGA-BRCA data (RNA-seq; read counts) and associated clinical information, as well as the steps of data preprocessing, normalization, and exploration, including the exploration of ESR1 expression for the traditional IHC classification.
 - **listdge.rda** is the *DGEList* object that contains the expression matrix (raw read counts) and the sample library sizes and normalization factors (TMM method).
 - **countsER.rda** is a two-columned table that contains, for each patient, the TMM-normalized log CPM read count of the ESR1 gene as well as the IHC category ("<1%", "1-9%", "10-50%", or ">50%") to which the patient belongs.
+- **Clustering.Rmd** contains the code for identifying natural subgroups (based on ESR1 expression) using different clustering approaches, comparing the resulting alternative classifications and selecting the most interesting ones, and finally comparing them with the traditional IHC classification.
+- **countsERmod.rda** is a seven-columned table that contains, for each patient, the TMM-normalized log CPM read count of the ESR1 gene as well as the category to which the patient belongs for the traditional IHC classification as well as the five alternative classifications kept at the end of the clustering step.
+- **colplotclust.R** is a custom function for attributing colors to individual points or whole category depending on the classification.
+- **plotclust.R** is a custom function for for generating a boxplot for a specific variable (ESR1 expression or other) or a bivariate plot that can be of any variable Y vs. variable X (or specifically ESR1 expression vs. index), depending on the classification.
+- **classifvskmeans.R** is a custom function for comparing the HCLUST-derived alternative classifications with those derived from K-means (for these specific data).
+- **voorwerkplots.R** is a custom function for generating boxplots similar to those in Voorwerk et al. (2023) from expression data and cell type abundance data (obtained from deconvolution analysis).
+- **classifvskmeans.R** is a custom function for computing between group differences according to the number of categories, data normality, and homoscedasticity. It includes arguments for computing other comparative results.
 
 **WARNING: SOME FILES ARE NOT PROVIDED BECAUSE OF EXCEEDING MAXIMUM FILE SIZE ALLOWED ON GITHUB BUT ARE HERE DESCRIBED ANYWAY**
 - **data.rda** and **clindata.rda** correspond to the prepared *SummarizedExperiment* object and clinical table respectively obtained just after the initial data download. These are the unprocessed data.
