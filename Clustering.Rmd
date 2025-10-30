@@ -2,9 +2,10 @@
 title: "Clustering"
 author: "Florian Bouchet"
 output:
+  html_document:
+    code_folding: show
   word_document:
     reference_docx: "Template.docx"
-  html_document:
 ---
 
 ```{r setup, include=FALSE}
@@ -60,7 +61,8 @@ countsERmod$ER_level <- droplevels(countsERmod$ER_level)
 
 <br>
 
-## CLUSTERING WITH HIERARCHICAL CLUSTERING
+### CLUSTERING WITH HIERARCHICAL CLUSTERING
+
 
 We need to determine what could be the optimal K (number of clusters). In that context, we will use the Elbow method, Silhouette method, and Gap statistics.
 
@@ -191,7 +193,8 @@ countsERmod <- countsERmod %>% mutate(
 
 <br>
 
-## CLUSTERING WITH K-MEANS
+### CLUSTERING WITH K-MEANS
+
 
 As for hierarchical clustering, we need to find the best K for K-means:
 
@@ -237,7 +240,7 @@ As for hierarchical clustering with Ward D2 these results rather point to an opt
 
 We now compute the clusters and explore the results:
 
-```{r}
+```{r, fig.height=5, fig.width=10, out.width="100%"}
 # K-means models with K = 2 and K = 3
 for(k in c(2,3)){
   set.seed(42)
@@ -253,7 +256,7 @@ plot_grid(plotlist=plotlist, nrow = 1)
 
 We observe that for both models the highest ESR1 values correspond to cluster 2. The lowest values correspond to cluster 1 in the model with K = 2 and cluster 3 in the model with K = 3. The medium values correspond to cluster 1 in the model with K = 3. We can readily rename these classifications, transform them to factor, and perform better visual comparisons:
 
-```{r}
+```{r, fig.height=5, fig.width=10, out.width="100%"}
 # Renaming the classifications and transforming them to factor
 groups <- groups %>% mutate(
   # Kmeans with three groups
@@ -301,7 +304,8 @@ countsERmod <- countsERmod %>% mutate(
 
 <br>
 
-## CLUSTERING WITH GAUSSIAN MIXTURE MODEL
+### CLUSTERING WITH GAUSSIAN MIXTURE MODEL
+
 
 For GMM it is not needed to specify the number of clusters as they are determined through Maximum-Likelihood.
 However it can be interesting to take a look at the distribution of the counts since GMM relies on multiple gaussian distributions:
@@ -343,7 +347,10 @@ countsERmod <- countsERmod %>% relocate(kmeans3, .after = wardD2_3)
 colnames(countsERmod)
 ```
 
-## FINAL COMPARISONS AMONG THE ALTERNATIVE CLASSIFICATIONS
+<br>
+
+### FINAL COMPARISONS AMONG THE ALTERNATIVE CLASSIFICATIONS
+
 
 Now that we have all alternative classifications at hand we can use the ARI to see how truly similar they are, quantitatively, comparing among the two ternary and among the three binary:
 
@@ -374,8 +381,10 @@ Now we can load it directly:
 load(file = "countsERmod.rda")
 ```
 
+<br>
 
-## COMPARISONS BETWEEN THE ALTERNATIVE CLASSIFICATIONS AND THE TRADITIONAL IHC STRATIFICATION
+### COMPARISONS BETWEEN THE ALTERNATIVE CLASSIFICATIONS AND THE TRADITIONAL IHC STRATIFICATION
+
 
 We can compare these alternative classifications to the IHC categories, again using the ARI:
 
