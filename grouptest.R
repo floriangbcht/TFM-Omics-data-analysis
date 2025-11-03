@@ -51,9 +51,14 @@ grouptest <- function(yvar, cluster, data, resulttest = T, mediancomp = F, pvala
     }
     ## If one wants the effect size
     if(magnitude == T){
-      # Cliff's delta
+      # Cohen's D or Cliff's delta
       cat("\n")
-      print(effectsize::cliffs_delta(data[,yvar]~data[,cluster]))
+      if(grepl("t-test", testfinal$method)){
+        print(effectsize::cohens_d(data[,yvar]~data[,cluster])) # Cohen's D
+      }
+      else{
+        print(effectsize::cliffs_delta(data[,yvar]~data[,cluster])) # Cliff's delta
+      }
     }
   }
   
@@ -113,7 +118,7 @@ grouptest <- function(yvar, cluster, data, resulttest = T, mediancomp = F, pvala
     }
     ## If one wants the effect size
     if(magnitude == T){
-      # Epislon squared or Eta squared
+      # Epsilon squared or Eta squared
       cat("\n")
       print(effectsize::effectsize(testgroup))
     }
