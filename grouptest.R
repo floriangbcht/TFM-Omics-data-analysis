@@ -14,8 +14,8 @@ grouptest <- function(yvar, cluster, data, resulttest = T, mediancomp = F, pvala
   ### If two groups only
   if(ngroups==2){
     # Normality test for each group
-    normalres <- tapply(data[,yvar], data[,cluster], function(x)
-      shapiro.test(x)$p.value)
+    normalres <- tapply(data[,yvar], data[,cluster], function(x){
+      shapiro.test(x)$p.value})
     ## If normality in both groups
     if(all(normalres>0.05)){
       # Homocedasticity test
