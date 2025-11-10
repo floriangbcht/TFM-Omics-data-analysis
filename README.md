@@ -20,14 +20,14 @@ Here is a breakdown of the included files:
 
 **Importantly, The "GDC data/TCGA-BRCA" folder contains two sub-folders, "Transcriptome_Profiling/Gene_Expression_Quantification" and "Clinical/Clinical_Supplement", including all files of the initial data download, therefore corresponding to the base TCGA-BRCA transcriptomic data and clinical information used in the present project.** 
 
-The "Function" folder includes the following files:
+The **"Function"** folder includes the following files:
 - **colplotclust.R** is a custom function for attributing colors to individual points or whole category depending on the classification.
 - **plotclust.R** is a custom function for for generating a boxplot for a specific variable (ESR1 expression or other) or a bivariate plot that can be of any variable Y vs. variable X (or specifically ESR1 expression vs. index), depending on the classification.
 - **classifvskmeans.R** is a custom function for comparing the HCLUST-derived alternative classifications with those derived from K-means (for these specific data). Requires *plotclust()* and *colplotclust()*.
 - **grouptest.R** is a custom function for computing between group differences according to the number of categories, data normality, and homoscedasticity. It includes arguments for computing other comparative results.
 - **voorwerkplots.R** is a custom function for generating comparable boxplots to those in Voorwerk et al. (2023), based on both gene expression data and cell-type abundance scores.
 
-The "Results" folder contains two sub-folders, "HTML reports" and XXXXXXXXXXXXXXXXXX. "HTML reports" includes the reports generated from the *.Rmd* documents in *.html* format.
+The **"Results"** folder contains two sub-folders, **"HTML reports"** and XXXXXXXXXXXXXXXXXX. **"HTML reports"** includes the reports generated from the *.Rmd* documents in *.html* format.
 
 
 **WARNING: SOME FILES ARE NOT PROVIDED BECAUSE OF EXCEEDING MAXIMUM FILE SIZE ALLOWED ON GITHUB BUT ARE HERE DESCRIBED ANYWAY**
