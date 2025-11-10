@@ -1,0 +1,359 @@
+---
+title: "Deconvolution"
+author: "Florian Bouchet"
+output:
+  html_document:
+    theme: cerulean
+    highlight: textmate
+    code_folding: show
+  word_document:
+    reference_docx: "Template.docx"
+---
+
+```{r class.source = 'fold-hide', setup, include=FALSE}
+library(knitr)
+library(rmdformats)
+
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=TRUE,
+	             cache=FALSE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
+```
+
+<br>
+
+
+Packages and functions that will be useful:
+
+```{r}
+# Loading packages
+library(SummarizedExperiment)
+library(edgeR)
+library(EnsDb.Hsapiens.v86)
+library(ConsensusTME)
+library(ggplot2)
+library(cowplot)
+library(dplyr)
+library(rpart)
+library(rpart.plot)
+
+# Loading functions
+source(file = "colplotclust.R")
+source(file = "plotclust.R")
+source(file = "grouptest.R")
+source(file = "voorwerkplots.R")
+```
+
+We load the data that will be used:
+
+```{r}
+# Loading the clean expression data
+load(file = "dataclean.rda")
+data
+# Loading the "countsER"mod table
+load(file = "countsERmod.rda")
+head(countsERmod)
+# Loading the DGElist
+load(file="listdge.rda")
+```
+
+<br>
+
+### DECONVOLUTION ANALYSIS
+
+We will perform a deconvolution analysis from normalized counts. First, Ensembl gene identifiers must be converted to HGNC (HUGO Gene Nomenclature Committee) gene identifiers and we will use the annotation database provided by Ensembl for that purpose.
+
+```{r}
+# Creating a new assay with normalized counts in the 'data' object
+assays(data)$countsnorm <- cpm(listdge, log = T)
+# Removing the version numbers of the genes and then removing duplicated genes (keeping only the first versions)
+rownames(data) <- sub("\\..*", "", rownames(data))
+data <- data[!duplicated(rownames(data)),]
+
+# Converting the identifiers and using them as secondary row names (when specifying "withDimnames=FALSE")
+dimnames(assays(data, withDimnames=FALSE)$countsnorm) <- list(AnnotationDbi::mapIds(EnsDb.Hsapiens.v86, rownames(data), keytype = "GENEID", column = "SYMBOL"), colnames(data))
+
+# Creating a matrix object with the HGNC identifiers
+datamatrix <- assays(data, withDimnames=FALSE)$countsnorm
+# Checking the duplicated identifiers
+table(!duplicated(rownames(datamatrix))) # 5188 duplicated
+
+# Running the proper deconvolution analysis for which we need to remove the duplicated genes
+deconvol <- consensusTMEAnalysis(datamatrix[!duplicated(rownames(datamatrix)),], cancer = "BRCA", statMethod = "ssgsea")
+deconvol <- t(deconvol)
+
+# Relative abundance scores for the samples of interest (omitting the "Unspecified" cases)
+deconvolmod <- deconvol[rownames(countsERmod),]
+```
+
+<br>
+
+### CORRELATIONS AND BIPLOTS OF ABUNDANCE SCORES VS. ESR1
+
+Let's explore the correlations between ESR1 and the cell type abundances estimated by deconvolution and generate bivariate plots:
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+# Table combining abundance scores and all variables from 'countsERmod'
+combined <- data.frame(deconvolmod, countsERmod)
+
+# Generating correlations and bivariate plot
+plotlist <- lapply(colnames(combined)[1:19], function(cell){
+
+    # Correlation
+    correl <- cor.test(combined$counts, combined[,cell], method = "spearman")
+    
+    # Linear model to obtain intercept and regression coefficient
+    lmodcoeff <- lm(combined[,cell]~combined$counts)$coefficients
+    
+    # Bivariate plot
+    plotclust(data = combined, xvar = "counts", yvar = cell, type = "biplot", col = "darkgray") +
+      geom_abline(intercept = lmodcoeff[1], slope = lmodcoeff[2], colour = "red", linewidth = 1) + 
+      labs(x = "Read count", title = ifelse(correl$p.value<0.05, paste0("Correlation = ", round(correl$estimate,2), " (p<0.05)"),
+                   paste("No correlation (p>0.05)"))) + theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 11), axis.title=element_text(size=12))
+  
+})
+  
+# Grids with 6 plots
+for(i in seq(1, length(plotlist)-1, by = 6)){
+  print(plot_grid(plotlist=plotlist[i:(i+5)], nrow = 2, ncol = 3))
+}
+
+# Immune score only
+plotlist[[19]]
+```
+
+The correlations with ESR1 are significant for all cell types except for the endothelial cells. The correlation is always negative except for endothelial cells. However, all correlations are very low, ranging from 0.13 to 0.40. We can conclude that there is weak correlation between ESR1 expression and the abundance scores for the different cell types.
+
+We can save the table *combined*:
+
+#save(combined, file="combined.rda")
+
+<br>
+
+### AMONG-GROUP COMPARISONS OF THE CLASSIFICATIONS BASED ON ABUNDANCE SCORES
+
+We will generate boxplots to compare the abundances scores among the investigated classification, for each cell type.
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+# Loop for generating compound grids with the boxplot for each investigated classification
+for(cell in colnames(combined)[1:19]){
+  plotlist <- lapply(colnames(combined)[21:26], FUN = function(cluster){
+    colbox <- colplotclust(classif = cluster, data = combined, type = "group")
+    plotclust(data = combined, xvar = cluster, yvar = cell, col = colbox$col, type = "boxplot", title = F) +
+      labs(x = paste(cluster, "\n"), y = "")
+  })
+  
+  # Grid with all plots
+  grid <- plot_grid(plotlist=plotlist, nrow = 2)
+  # Common title
+  title <- ggdraw() + draw_label(cell, fontface='bold')
+  # Final figure
+  print(plot_grid(title, grid, ncol=1, nrow = 2, rel_heights=c(0.1, 1)))
+  
+}
+```
+
+We observe the following: For the IHC classification, the general pattern is that the higher the ESR1 expression levels, the lower the abundance scores. However, the pattern varies sometimes with for example the "10-50%" category that has higher scores than the "1-9%" category. This pattern is also reversed in the case of the endothelial cells and fibroblasts.
+
+The alternative ternary classifications show a similar general pattern: the higher the ESR1 expression levels, the lower the abundance scores, also with variation. The differences are less marked between the "Low" and "Moderate" categories than with the "High" category, but are somewhat more pronounced for the *kmeans3* classification. The pattern is also reversed for the endothelial cells and fibroblasts, except that in these cases, the "Moderate" category has the highest scores.
+
+Regarding alternative binary classifications, the results are also very similar from one classification to another. The general pattern is confirmed and is somewhat easier to observe since there are only two categories. The inverted pattern is again confirmed for the endothelial cells and fibroblasts. The differences appear somewhat more pronounced in the case of the *kmeans_GMM2* classification.
+
+The next step is to verify whether the differences between categories are significant or not (overall and pairwise differences). We check for each investigated classification separately:
+
+```{r, eval=FALSE}
+# Example for the IHC categories (not run here)
+for(cell in colnames(combined)[1:19]){
+    grouptest(cell, "ER_level", combined)
+}
+# To generate the results for the other classifications, one just has to replace "ER_level" with "wardD2_3", "kmeans3", "wardD2_2", "complete2", or "kmeans_GMM2"
+```
+
+
+- Traditional IHC classification:
+The "<1%" category always differs significantly from the ">50%" category. It further differs from the "10-50%" category except for the dendritic cells, eosinophils, CD8 T cells, M2 macrophages, endothelial cells, and monocytes. The "<1%" category also differs from the "1-9%" category but only for eosinophils and plasma cells.
+The immune score shows significant differences between the "<1%" and ">50%" categories only.
+
+These results partially agree with those of Voorwerk et al. (2023): The "<1%" category does not differ from the "1-9%" category (except for the two cell type mentionned above), nor from the "10-50%" category, but only for the CD8 T cells. In addition, the "1-9%" and "10-50%" categories do not differ form each other eithe. Finally, the "<1%" and ">50%" categories always differ significantly. However, both the "1-9%" and "10-50%" categories never differ significantly from the ">50%" category (unlike in the results of Voorwerk et al., 2023). It should be remembered nonetheless that conducting a precise comparison is difficult since Voorwerk et al. (2023) directly analyzed cell percentages (instead of abundance scores, as we did) and only evaluated two general cell types (stromal TILs and stromal CD8 cells) instead of individual cell types (as in most cases here). More specific comparisons based on more comparable results will be conducted in a next step.
+
+- Alternative ternary classifications:
+The "High" category always differs significantly from the "Low" and "Moderate" categories, except for the M2 macrophages (no differences between "Low" and "High") and endothelial cells (no differences between "Moderate" and "High") in the case of *wardD2_3*, and the fibroblasts (no differentiation between "Low" and "High") in the case of *kmeans_3*.
+Differences are also significant when comparing the "Moderate" and "Low" categories, but only for the fibroblasts and endothelial cells (both classifications), as well as the neutrophils (*kmeans_3* only).
+The immune score shows significant differences between the "High" and "Low" as well as between the "High" and "Moderate" categories.
+
+- Alternative binary classifications:
+The two categories ("LowToMod" and "ModToHigh"), always differ significantly. the only exceptions are the M2 macrophages and monocytes in the case of *wardD2_2* only.
+
+<br>
+
+### COMPARISONS OF THE CLASSIFICATIONS USING A PCA BASED ON THE ABUNDANCE SCORES
+
+Finally, it may be interesting to investigate whether the various categorizations are reflected when applying a PCA using all abundance scores:
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+# PCA with percentages of variance explained by the first two PCs
+acp <- prcomp(combined[1:19], scale. = T) # We scale the data (standardization) to ensure that cell types with larger variance do not dominate
+perc <- round(acp$sdev^2/sum(acp$sdev^2) * 100, 2)
+
+# Generating the list of PCA plots
+plotlist <- lapply(colnames(combined)[21:26], FUN = function(cluster){
+  colorgplot <- colplotclust(classif = cluster, data = combined, type = "single") # Point colors
+  hulls <- as.data.frame(acp$x[, 1:2]) %>% mutate(investclassif = combined[,cluster]) %>% group_by(investclassif) %>% slice(chull(PC1, PC2)) %>% ungroup() %>% as.data.frame() # Convex hulls for each category, for which it is first needed to have a table with both the PC scores and the category labels
+  plotclust(data = acp$x, xvar = 1, yvar = 2, col = colorgplot$col, type = "biplot", title = F) +
+    geom_polygon(data = hulls, aes(x = PC1, y = PC2, fill = colplotclust(classif = "investclassif", data = hulls, type = "single")$col), alpha = 0.3) + scale_fill_identity() +
+    labs(x = "", y = "")
+})
+  
+# Grid with all plots
+grid <- plot_grid(plotlist=plotlist, nrow = 2)
+# Common title
+title <- ggdraw() + draw_label(paste("PCA of the abundance scores", "(PC1 =", perc[1], "%", "and PC2 =", perc[2], "%)"), fontface='bold')
+# Final figure
+print(plot_grid(title, grid, ncol=1, nrow = 2, rel_heights=c(0.1, 1)))
+```
+
+No particular groupings stand out in the PCA. The categorization is not reflected either, for any of the investigated classification. The overlap is almost complete (for all categories of all investigated classifications).
+
+In terms of cell type abundances, and leaving the PCA results apart, we have seen that the binary classifications (almost) systematically show significant differences between their two categories. The pairwise group differences are not always significant in the case of the  IHC and alternative ternary classifications. The signal is robust when comparing extremes categories but remains the problem of the intermediate categories (especially "1-9%" and "Moderate") that are not always differentiated from the others. Binary classifications can be considered parsimonious alternatives when more groups (caategories) do not give clear biological signal (clear biological differentiation). 
+
+<br>
+
+### GENERALIZED COMPARISONS OF THE CLASSIFICATIONS BASED ON RELEVANT IMMUNOLOGICAL FEATURES
+
+To go further and try determining which classification is the optimal in terms of biological (immunological) signal—that is to say to have a global view of which one best distinguishes between its categories biologically-wise, we will select representative immunological features, and for each of them use global among-groups differentiation metrics and characteristics to compare all investigated classifications at once. In that case the most representative immunological cell types would be the best markers directly associated with the antitumor immune response (lymphoid cells) and the immune evasion phenotype (myeloid cells): The lymphocytes types B and T (CD4+, CD8+, and regulatory), the NK cells, and the macrophages (M1, M2, and non-polarized). The mast cells and immune score is useful here as well, the first because of their positive relationship to ER expression (see Voorwerk et al., 2023) and the second because of being an overall measure of immune cell abundance.
+
+We will thus produce summary tables with various important elements:
+
+(i) The adjusted p-value of the primary among-group comparison test. Since we compare the 6 investigated classifications the p-value is adjusted by 6, using the FDR method (Benjamini-Hochberg correction). We do not consider the 10 variables in the correction since we generate a separate summary table for each.
+
+(ii) The absolute median difference and gradient of the medians. The gradient corresponds to the category ordering according to their respective median values (from lowest to highest). The order is given if it is logical (e.g., "Low Moderate High" or "High Moderate Low") and "Unordered" is displayed otherwise.
+
+(iii) The effect size (and its interpretation) and effect size measure used. The effect size measure applied depends on the primary among-group comparison test used: for binary classifications, Cohen's D if it is Student's T and Cliff's Delta if it is Mann-Whitney. For the other classifications, Epsilon squared if it is Kruskal-Wallis, Eta squared if it is ANOVA, and Approximate Eta squared if it is Welch's ANOVA (these three metrics are the corresponding default metrics of the *effectsize()* function). The interpretation of values (small, moderate, or high effect) is based on *In and Lee (2024)*.
+
+Our function *grouptest()* allows saving small tables in *.csv* format with some of these measures (the rest is directly printed in the console) so that it is needed to run the function separately for each immunological feature: 
+
+```{r, eval=FALSE}
+# Vector with considered immunological features
+celltype <- colnames(combined)[c(1,9,10,12,7,13,14,5,6,19)]
+
+# Applying the function 'grouptest()' with the correct parameters
+# Here it is showed for the first feature only
+for(cluster in colnames(combined)[c(21:26)]){
+    grouptest(celltype[1], cluster, combined, resulttest = F, mediancomp = T, pvaladj = T, ncomps = 6, magnitude = T, writetable = T)
+} # Repeat for all elements in celltype (celltype[2], celltype[3], ..., celltype[10])
+```
+
+The final summary tables (for all immunological features) can be found in the *Summary_tables_classification_comparisons.xlsx* document.
+
+The two classifications that appear to best distinguish between their categories overall are systematically *kmeans3* (only one exception over the 10 comparisons) and *kmeans_GMM2* These are essentially the ones with the highest effect size (see the interpretation column). These always show a significant adjusted p-value and ordered gradient of medians. It can be observed that on several occasions the adjusted p-value is not even significant in the case of *wardD2_2*. In more half of the cases the IHC classification shows an unordered gradient.
+
+The fact that the ternary K-means classification (as well as the binary one) shows better overall differentiation than the IHC classification supports the hypothesis that an alternative classification can be biologically more relevant than the traditional IHC thresholds.
+In addition, the fact that a perfect gradient of medians isn't always observed in the IHC classification and that the effect sizes are generally small further coincide with this hypothesis that the traditional ER thresholds doesn't necessarily reflect the underlying biology of tumors.
+
+<br>
+
+### ADDITIONAL COMPARISONS BASED ON THE RESULTS OF VOORWERK ET AL. (2023)
+
+As mentionned previously, here we will generate more comparable boxplots to those shown in Voorwerk et al. (2023: Figs. 1a-c and 2b-i), though not identical due to methodological differences. The objective is to check whether the ivestigated classifications reproduce (at least partially) the trends described there. If this is the case it can be a good argument that the classification is biologically valuable.
+
+For Fig. 1a ("Stromal TILs"), we will combine the scores of the NK cells, CD4 T cells, CD8 T cells, and regulatory T cells and use the mean score.
+For Fig. 1b ("T_cells_CD8"), we will simply use the CD8 T cell scores (same plot as the one computed earlier).
+For Fig. 1c ("PDL1 expression"), we will use the expression of the CD274 gene.
+For the boxplots in Fig. 2b-i, we will use the gene expression or mean expression of the set of genes, corresponding to each molecular signature.
+
+To make visual comparisons easier, jitter points with similar colors are used.
+
+We can apply our custom function *voorwerkplots()* specifically devised for that purpose:
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+# Comparable boxplots to those in Voorwerk et al. (2023)
+voorwerkplots(cluster=colnames(combined)[c(21:26)], data1 = combined, data2 = datamatrix)
+```
+
+
+- Traditional IHC categories:
+There is moderate agreement with the results of Voorwerk et al. (2023). The concordance is only moderate because, generally, the "<1%" category has relatively higher values and the "10-50%" category relatively lower values than in the plots of Voorwerk et al. (2023).
+However, the trend in our data fits very well with those observed in Voorwerk et al. (2023) for some signatures: regulatory T cells, IFN-γ, inflammatory chemokine (although the values in the "<1%" category are too high), and mast cells.
+
+- Alternative ternary classifications:
+It is not straightforward to accurately evaluate the concordance with the trends observed in Voorwerk et al. (2023). However, considering that the "Moderate" category is an intermediate category and thus comparable to a mix of the traditional "1-9%" and "10-50%" categories together—simply for visual trend comparisons since it is not really the case quantitatively speaking—and that the extremes are roughly comparable as well, the trends correspond quite well. It decreases for the abundance of stromal TILs and PDL1 expression (*kmeans3* fits somewhat better), and is maintained before decreasing in the case of the abundance of stromal CD8 cells (*wardD2_3* fits somewhat better). Regarding the molecular signatures, the trend is also maintained before decreasing in the case of the CD8+ T cells, regulatory T cells, and PD1 (*wardD2_3* fits somewhat better for the two first and *kmeans3* for the last). For the APM, IFN-gamma, and tumor inflammation, *kmeans3* fits somewhat better as the decrease is more marked between the first and second categories.*wardD2_3* fits somewhat better for the inflammatory chemokine.
+The among-group differences seem generally (somewhat) more marked for *kmeans3*.
+
+- Alternative binary classifications:
+The results are extremely similar from one classification to another, though the among-group differences almost systematically appear being somewhat more pronounced for *kmeans_GMM2*. In any case, there is agreement, since the results of Voorwerk et al. (2023) always show a difference between the two most extreme categories, like here.
+
+Though definitive conclusions are not easily drawn, it is interesting to note that the IHC classification is not particularly more congruent trend-wise than the alternative classifications, and yet its number of categories and their definition is much closer, almost identical, to those used in Voorwerk et al. (2023).
+
+In summary, the trends observed in Voorwerk et al., are indeed partially reflected in our data, with some evident variation. Once again, *kmeans3* and *kmeans_GMM2* appear to be good candidate classifications with regards to the underlying biology of breast tumors.
+Now we have enough evidence to at least prioritize these two classifications over the others.
+
+<br>
+
+### SUPPLEMENTARY ANALYSIS WITH CART
+
+At that stage it can be convenient to use the CART algorithm to search for most adequate and concrete divisions in the ESR1 data using the investigated classifications.
+Since we previously highlighted the relevance of the alternative classifications *kmeans3* and *kmeans_GMM2* we will apply CART on these two, as well as on the traditional IHC classification.
+
+Let's start with the latter:
+
+```{r, fig.height=7, fig.width=10, out.width="100%"}
+# Base model for IHC 
+cart <- rpart(countsERmod$ER_level ~ countsERmod$counts, method = "class", cp=0)
+rpart.plot(cart) # plot
+
+# Contigency table
+table(predict(cart, countsERmod["counts"], type = "class"), countsERmod$ER_level)
+```
+
+We observe that most observations are classified into the "<1%" or ">50%" categories, only a few on the "10-50%" category, and none on the "1-9%" category. This is another indication that the two extreme categories are well separated, but the others are much less, and that there would be only one intermediate category, like a ternary classification. The resulting tree suggests no less than nine cutoffs, some being very similar and even two that are virtually the same but expressed differently ("< 9.4" and "≥ 9.4"), which seem unreasonable results.
+Now we will calculate the complexity parameter (cp), which minimizes the relative prediction error (from cross-validation) and see how the tree can be pruned:
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+# CP that gives the smallest xerror 
+(bestcp <- cart$cptable[which.min(cart$cptable[,"xerror"]),"CP"])
+```
+
+Indeed, the cp that minimizes the xerror is 0.001059322. We can prune the tree with this value and look at the new results:
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+# Pruned model for IHC
+cart <- prune(cart, cp = bestcp)
+rpart.plot(cart) # plot
+
+# Contigency table
+table(predict(cart, countsERmod["counts"], type = "class"), countsERmod$ER_level)
+```
+
+The pruned tree results a single binary split, basically separating the two extreme categories. We see that the cutoff point is 5.6 (number of normalized counts). This means we would have only two true categories based on the IHC classification: the tumors with an ESR1 expression lower than 5.6, and the tumors with an ESR1 expression equals or higher to 5.6.
+
+Now let's compute the results for the two selected alternative classifications:
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+# Base model for 'kmeans3'
+cartalt3 <- rpart(countsERmod$kmeans3 ~ countsERmod$counts, method = "class", cp=0)
+rpart.plot(cartalt3) # plot
+# CP that gives the smallest xerror 
+(bestcp <- cartalt3$cptable[which.min(cartalt3$cptable[,"xerror"]),"CP"])
+# Contigency table comparing 'kmeans3' and the traditional IHC classification
+table(predict(cartalt3, countsERmod["counts"], type = "class"), countsERmod$ER_level)
+
+
+# Base model for 'kmeans_GMM2'
+cartalt2 <- rpart(countsERmod$kmeans_GMM2 ~ countsERmod$counts, method = "class", cp=0)
+rpart.plot(cartalt2) # plot
+# CP that gives the smallest xerror 
+(bestcp <- cartalt2$cptable[which.min(cartalt2$cptable[,"xerror"]),"CP"])
+# Contigency table comparing 'kmeans_GMM2' and the traditional IHC classification
+table(predict(cartalt2, countsERmod["counts"], type = "class"), countsERmod$ER_level)
+```
+
+These results are interesting. First, because with these alternative classifications no pruned is needed (which could have been anticipated since clustering algorithms seeks to optimize the resulting clusters), and second, because with *kmeans_GMM2* the split is almost perfectly similar to that obtained from the IHC-based pruned tree. In that case we observe that the cutoff point is 5.7 and that the contingency table gives nearly the exact same results (only two samples differin their categorization). This gives strong support that *kmeans_GMM2* could be the most representative alternative binary classification. Getting back to *kmeans3*, the results once again support that this alternative ternary classification is worth considering. There are two cutoff points, one at 4.6 and another one at 8.6.
+
+The results of these analyses with CART reinforce the message that natural clusters based on ESR1 expression offer different tresholds than the traditional ones based on IHC.
+
