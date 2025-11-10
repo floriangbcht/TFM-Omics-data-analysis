@@ -18,6 +18,8 @@ Here is a breakdown of the included files:
 - **Deconvolution.Rmd** contains the code necessary to prepare the data for deconvolution analysis, perform such analysis using the ConsensusTME framework, compute the correlations of abundance scores vs. ESR1, compare the classifications using statistical tests based on abundance scores and a PCA, make generalized comparisons of the classifications based on relevant immunological features, and finally compute supplementary analysis including boxplots comparable to those of Voorwerk et al. (2023) and the application of CART on selected classifications.
 - **Summary_tables_classification_comparisons.xlsx** provides summary tables of the generalized comparisons of the classifications based on ten relevant immunological features.
 
+**Importantly, The "GDC data/TCGA-BRCA" folder contains two sub-folders, "Transcriptome_Profiling/Gene_Expression_Quantification" and "Clinical/Clinical_Supplement", including all files of the initial data download, therefore corresponding to the base TCGA-BRCA transcriptomic data and clinical information used in the present project.** 
+
 The "Function" folder includes the following files:
 - **colplotclust.R** is a custom function for attributing colors to individual points or whole category depending on the classification.
 - **plotclust.R** is a custom function for for generating a boxplot for a specific variable (ESR1 expression or other) or a bivariate plot that can be of any variable Y vs. variable X (or specifically ESR1 expression vs. index), depending on the classification.
