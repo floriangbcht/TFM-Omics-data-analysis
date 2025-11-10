@@ -10,7 +10,7 @@ voorwerkplots <- function(cluster, data1, data2){
                  apmsign=list(c("TAP1","TAP2","TAPBP","HLA-A","HLA-B","HLA-C"),"APM signature"), 
                  ifnsign=list(c("CXCL9","CXCL10"),"IFN-γ signature"), infchemsign=list(c("CCL2","CCL4","CCL7"),"Inflammatory chemokine signature"), 
                  tuminfsign=list(c("CCL5","CD27","CD274","CD276","CD8A","CXCL9","CXCR6","HLA-DQA1","HLA-DRB1","HLA-E","IDO1","LAG3","NKG7","PDCD1LG2",
-                                   "PSMB10","STAT1","TIGIT"),"Tumor inflammatory signature"), 
+                                   "PSMB10","STAT1","TIGIT"),"Tumor inflammation signature"), 
                  mastsign=list(c("MS4A2","CPA3","HDC","TPSAB1"),"Mast cell signature"))
   
   for(i in names(immune)){
