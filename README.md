@@ -33,3 +33,4 @@ The **"Results"** folder contains two sub-folders, **"HTML reports"** and XXXXXX
 **WARNING: SOME FILES ARE NOT PROVIDED BECAUSE OF EXCEEDING MAXIMUM FILE SIZE ALLOWED ON GITHUB BUT ARE HERE DESCRIBED ANYWAY**
 - **data.rda** corresponds to the prepared *SummarizedExperiment* object obtained just after the initial data download. These are the unprocessed expression data and sample information.
 - **dataclean.rda** corresponds to the *SummarizedExperiment* object resulting from the preprocessing step.
+**Both object can be easily generated following the code provided at the beginning of Exploration_Data.Rmd**
