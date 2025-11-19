@@ -102,18 +102,14 @@ Let's explore the correlations between ESR1 and the cell type abundances estimat
 # Table combining abundance scores and all variables from 'countsERmod'
 combined <- data.frame(deconvolmod, countsERmod)
 
-# Generating correlations and bivariate plot
+# Generating correlations and bivariate plots
 plotlist <- lapply(colnames(combined)[1:19], function(cell){
 
     # Correlation
     correl <- cor.test(combined$counts, combined[,cell], method = "spearman")
     
-    # Linear model to obtain intercept and regression coefficient
-    lmodcoeff <- lm(combined[,cell]~combined$counts)$coefficients
-    
     # Bivariate plot
     plotclust(data = combined, xvar = "counts", yvar = cell, type = "biplot", col = "darkgray") +
-      geom_abline(intercept = lmodcoeff[1], slope = lmodcoeff[2], colour = "red", linewidth = 1) + 
       labs(x = "Read count", title = ifelse(correl$p.value<0.05, paste0("Correlation = ", round(correl$estimate,2), " (p<0.05)"),
                    paste("No correlation (p>0.05)"))) + theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 11), axis.title=element_text(size=12))
   
@@ -128,7 +124,44 @@ for(i in seq(1, length(plotlist)-1, by = 6)){
 plotlist[[19]]
 ```
 
-The correlations with ESR1 are significant for all cell types except for the endothelial cells. The correlation is always negative except for endothelial cells. However, all correlations are very low, ranging from 0.13 to 0.40. We can conclude that there is weak correlation between ESR1 expression and the abundance scores for the different cell types.
+The correlations with ESR1 are significant for all cell types except for the endothelial cells. The significant correlations are always negative. All correlations range from 0.13 to 0.40 so that we can conclude that there is low-to-moderate correlation between ESR1 expression and the abundance scores for the different cell types.
+Interestingly, the relationships seem to be non-linear, confirming the use of Spearman's correlations. In particular, we observe that for read counts inferior to approximately 6 the relative abundances increase whereas for higher read counts those decrease. It can be illustrated by mean of a broken stick regression: 
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+# Generating correlations and bivariate plots
+plotlist <- lapply(colnames(combined)[1:19], function(cell){
+
+    # Correlation
+    correl <- cor.test(combined$counts, combined[,cell], method = "spearman")
+    
+    # Broken stick linear model to obtain intercept and regression coefficients
+    lhs <- function(x) ifelse(x<6, 6-x, 0)
+    rhs <- function(x) ifelse(x<6, 0, x-6)
+    lmodcoeff <- lm(combined[,cell] ~ lhs(combined$counts) + rhs(combined$counts))$coefficients
+    
+    # Matrix containing the predicted Y values over a range of X values covering the observed X value range
+    xseq <- seq(-2, 12)
+    yval <- lmodcoeff[1] + lmodcoeff[2]*lhs(xseq) + lmodcoeff[3]*rhs(xseq)
+    df <- data.frame(xseq=xseq, yval=yval)
+    
+    # Bivariate plot with the double abline
+    plotclust(data = combined, xvar = "counts", yvar = cell, type = "biplot", col = "darkgray") +
+      geom_line(data = df, aes(x=xseq, y=yval), colour = "red", linewidth = 1) +
+      labs(x = "Read count", title = ifelse(correl$p.value<0.05, paste0("Correlation = ", round(correl$estimate,2), " (p<0.05)"),
+                   paste("No correlation (p>0.05)"))) + theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 11), axis.title=element_text(size=12))
+  
+})
+  
+# Grids with 6 plots
+for(i in seq(1, length(plotlist)-1, by = 6)){
+  print(plot_grid(plotlist=plotlist[i:(i+5)], nrow = 2, ncol = 3))
+}
+
+# Immune score only
+plotlist[[19]]
+```
+
+The relationships appear clearer with the help of the broken stick regression. The increase in relative abundances when read counts are inferior to 6 could make sense biologically: If tumors with read counts inferior to 6 correspond in fact to ER-negative and ER-low/ER-moderate-positive tumors (and the others to ER-high-positive tumors) it indeed translates the more inflamed TME of such tumors previously evidenced in the literature.
 
 We can save the table *combined*:
 
