@@ -119,8 +119,6 @@ for(met in c("ward.D2", "average", "complete")){
 
 
 # Visualizing the four classifications using boxplots
-source(file = "plotclust.R") # Loading the function 'plotclust'
-
 plotlist <- lapply(colnames(groups), FUN = function(classif){
   plotclust(data = groups, xvar = classif, datay = countsERmod, yvar = "counts", type = "boxplot")
 })
@@ -244,7 +242,7 @@ We now compute the clusters and explore the results:
 # K-means models with K = 2 and K = 3
 for(k in c(2,3)){
   set.seed(42)
-  groups[[paste0("k_means", k)]] <- factor(kmeans(countsERmod$counts, centers = k, iter.max = 10000, nstart = 100)$cluster)
+  groups[[paste0("kmeans", k)]] <- factor(kmeans(countsERmod$counts, centers = k, iter.max = 10000, nstart = 100)$cluster)
 }
 
 # Visualizing the two classifications using boxplots
@@ -260,11 +258,11 @@ We observe that for both models the highest ESR1 values correspond to cluster 2.
 # Renaming the classifications and transforming them to factor
 groups <- groups %>% mutate(
   # Kmeans with three groups
-  k_means3=c("Moderate","High","Low")[k_means3],
-  k_means3=factor(k_means3, levels=c("Low","Moderate","High"))# Reordering the levels
+  kmeans3=c("Moderate","High","Low")[kmeans3],
+  kmeans3=factor(kmeans3, levels=c("Low","Moderate","High"))# Reordering the levels
   ,
   # Kmeans with two groups
-  k_means2=as.factor(c("LowToMod", "ModToHigh")[k_means2])# No need to reorder the levels
+  kmeans2=as.factor(c("LowToMod", "ModToHigh")[kmeans2])# No need to reorder the levels
 )
 
 
@@ -283,8 +281,8 @@ for(classif in colnames(groups)[1:4]){
 
 # Cluster sizes
 for(k in c(2,3)){
-  cat("Classification:", paste0("k_means", k))
-  print(table(groups[[paste0("k_means", k)]]))
+  cat("Classification:", paste0("kmeans", k))
+  print(table(groups[[paste0("kmeans", k)]]))
   cat("\n")
 }
 ```
@@ -297,9 +295,9 @@ We can add the two K-means alternative classifications to the *countsERmod* tabl
 # Adding the classifications to the table
 countsERmod <- countsERmod %>% mutate(
   # K-means with two groups
-  kmeans2=groups$k_means2,
+  kmeans2=groups$kmeans2,
   # K-means with three groups
-  kmeans3=groups$k_means3)
+  kmeans3=groups$kmeans3)
 ```
 
 <br>

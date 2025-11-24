@@ -22,7 +22,7 @@ classifvskmeans <- function(dataclassif, classif, datay, type = c("boxplot", "bi
     p1 <- plotclust(data = dataclassif, xvar = classif, datay = datay, yvar = "counts", type = "boxplot", col = clustcol$col, title = F)
     
     # Boxplot for K-means
-    p2 <- plotclust(data = dataclassif, xvar = paste0("k_means", k), datay = datay, yvar = "counts", type = "boxplot", col = clustcol$col, title = F)
+    p2 <- plotclust(data = dataclassif, xvar = paste0("kmeans", k), datay = datay, yvar = "counts", type = "boxplot", col = clustcol$col, title = F)
   }
   else{ ## Biplot
     
@@ -32,7 +32,7 @@ classifvskmeans <- function(dataclassif, classif, datay, type = c("boxplot", "bi
     p1 <- plotclust(data = dataclassif, xvar = classif, datay = datay, yvar = "counts", type = "biplotESR1", col = clustcol$col, title = F)
     
     # Point colors for Kmeans
-    clustcol <- colplotclust(paste0("k_means", k), dataclassif, type = "single")
+    clustcol <- colplotclust(paste0("kmeans", k), dataclassif, type = "single")
     # Bivariate plot of read counts vs. indices for K-means
     p2 <- plotclust(data = dataclassif, xvar = classif, datay = datay, yvar = "counts", type = "biplotESR1", col = clustcol$col, title = F)
   }
@@ -40,7 +40,7 @@ classifvskmeans <- function(dataclassif, classif, datay, type = c("boxplot", "bi
   # Grid with the two plots
   grid <- plot_grid(plotlist=list(p1, p2), nrow = 1)
   # Common title
-  title <- ggdraw() + draw_label(paste("Classification:",classif,"vs.",paste0("k_means", k), "\n"), fontface='bold')
+  title <- ggdraw() + draw_label(paste("Classification:",classif,"vs.",paste0("kmeans", k), "\n"), fontface='bold')
   # Final figure
   print(plot_grid(title, grid, ncol=1, nrow = 2, rel_heights=c(0.1, 1)))
   
