@@ -383,7 +383,6 @@ load(file = "countsERmod.rda")
 
 ### COMPARISONS BETWEEN THE ALTERNATIVE CLASSIFICATIONS AND THE TRADITIONAL IHC STRATIFICATION
 
-
 We can compare these alternative classifications to the IHC categories, again using the ARI:
 
 ```{r}
@@ -393,6 +392,29 @@ for(classif in colnames(countsERmod)[3:7]){
   print(table(countsERmod$ER_level, countsERmod[,classif]))
   cat("\n", "ARI:", adjustedRandIndex(countsERmod$ER_level, countsERmod[,classif]),"\n", "\n")
 }
+```
+
+Nice mosaic plots can also be generated:
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+# Compound mosaic plots for IHC vs alternative ternary classifications
+par(mar = c(1, 0, 2, 1)) # Reducing plot margin sizes
+par(mfrow=c(1,2)) # Modifying plotting window disposition
+for(classif in colnames(countsERmod)[3:4]){
+  mosaicplot(table(countsERmod[,classif], countsERmod$ER_level), color=colplotclust("ER_level", countsERmod)$col, las=1, 
+                   main=paste("IHC vs.", classif, "\n"), cex.axis = 1)
+}
+
+# Compound mosaic plots for IHC vs alternative binary classifications
+par(mfrow=c(1,3))  # Modifying plotting window disposition
+for(classif in colnames(countsERmod)[5:7]){
+  mosaicplot(table(countsERmod[,classif], countsERmod$ER_level), color=colplotclust("ER_level", countsERmod)$col, las=1,
+                   main=paste("IHC vs.", classif, "\n"), cex.axis = 1)
+}
+
+# Reinitializing plot margin sizes and plotting window disposition
+par(mfrow=c(1,1))
+par(mar = c(5.1, 4.1, 4.1, 2.1))
 ```
 
 The K-means ternary classification is the most dissimilar to the IHC stratification (ARI = 0.27) whereas the K-means/GMM binary classification is the most similar (ARI = 0.63). Ward D2 and Complete binary classifications, compared to the IHC stratification, show a similar ARI (0.57-0.58). We observe that the ternary classifications are overall less similar to the IHC stratification than the binary ones.

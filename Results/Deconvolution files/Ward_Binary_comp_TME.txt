@@ -1,0 +1,111 @@
+ TEST WITH CLASSIFICATION wardD2_2 
+VARIABLE: B_cells 
+ 
+Mann-Whitney test 
+ 0.002420894
+ 
+ TEST WITH CLASSIFICATION wardD2_2 
+VARIABLE: Cytotoxic_cells 
+ 
+Mann-Whitney test 
+ 0.0001445814
+ 
+ TEST WITH CLASSIFICATION wardD2_2 
+VARIABLE: Dendritic_cells 
+ 
+Student test 
+ 0.01118363
+ 
+ TEST WITH CLASSIFICATION wardD2_2 
+VARIABLE: Eosinophils 
+ 
+Mann-Whitney test 
+ 0.04737575
+ 
+ TEST WITH CLASSIFICATION wardD2_2 
+VARIABLE: Macrophages 
+ 
+Student test 
+ 9.402898e-05
+ 
+ TEST WITH CLASSIFICATION wardD2_2 
+VARIABLE: Mast_cells 
+ 
+Mann-Whitney test 
+ 0.009533716
+ 
+ TEST WITH CLASSIFICATION wardD2_2 
+VARIABLE: NK_cells 
+ 
+Mann-Whitney test 
+ 0.009588511
+ 
+ TEST WITH CLASSIFICATION wardD2_2 
+VARIABLE: Neutrophils 
+ 
+Student test 
+ 2.508446e-07
+ 
+ TEST WITH CLASSIFICATION wardD2_2 
+VARIABLE: T_cells_CD4 
+ 
+Mann-Whitney test 
+ 0.009754586
+ 
+ TEST WITH CLASSIFICATION wardD2_2 
+VARIABLE: T_cells_CD8 
+ 
+Mann-Whitney test 
+ 0.03553258
+ 
+ TEST WITH CLASSIFICATION wardD2_2 
+VARIABLE: T_cells_gamma_delta 
+ 
+Mann-Whitney test 
+ 0.004890536
+ 
+ TEST WITH CLASSIFICATION wardD2_2 
+VARIABLE: T_regulatory_cells 
+ 
+Mann-Whitney test 
+ 0.006557647
+ 
+ TEST WITH CLASSIFICATION wardD2_2 
+VARIABLE: Macrophages_M1 
+ 
+Student test 
+ 0.001727001
+ 
+ TEST WITH CLASSIFICATION wardD2_2 
+VARIABLE: Macrophages_M2 
+ 
+
+ 
+ TEST WITH CLASSIFICATION wardD2_2 
+VARIABLE: Endothelial 
+ 
+Student test 
+ 5.810301e-06
+ 
+ TEST WITH CLASSIFICATION wardD2_2 
+VARIABLE: Fibroblasts 
+ 
+Mann-Whitney test 
+ 2.560465e-05
+ 
+ TEST WITH CLASSIFICATION wardD2_2 
+VARIABLE: Monocytes 
+ 
+
+ 
+ TEST WITH CLASSIFICATION wardD2_2 
+VARIABLE: Plasma_cells 
+ 
+Mann-Whitney test 
+ 0.006140108
+ 
+ TEST WITH CLASSIFICATION wardD2_2 
+VARIABLE: Immune_Score 
+ 
+Mann-Whitney test 
+ 0.0011225

@@ -1,0 +1,372 @@
+ TEST WITH CLASSIFICATION ER_level 
+VARIABLE: B_cells 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 18.5532, df = 3, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |        <1%       >50%       1-9%
+---------+---------------------------------
+    >50% |   4.300675
+         |    0.0001*
+         |
+    1-9% |   2.170164  -0.101170
+         |     0.0900     1.0000
+         |
+  10-50% |   2.716799  -0.558125  -0.217531
+         |    0.0198*     1.0000     1.0000
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION ER_level 
+VARIABLE: Cytotoxic_cells 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 31.182, df = 3, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |        <1%       >50%       1-9%
+---------+---------------------------------
+    >50% |   5.473469
+         |    0.0000*
+         |
+    1-9% |   1.526695  -1.512086
+         |     0.3805     0.3915
+         |
+  10-50% |   3.259891  -0.964340   0.797561
+         |    0.0033*     1.0000     1.0000
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION ER_level 
+VARIABLE: Dendritic_cells 
+ 
+                <1% 1-9%    10-50%
+1-9%   1.742546e-01   NA        NA
+10-50% 1.291241e-01    1        NA
+>50%   2.475728e-05    1 0.9312653
+
+ 
+ TEST WITH CLASSIFICATION ER_level 
+VARIABLE: Eosinophils 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 15.4433, df = 3, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |        <1%       >50%       1-9%
+---------+---------------------------------
+    >50% |   3.741421
+         |    0.0005*
+         |
+    1-9% |   2.754473   0.882356
+         |    0.0176*     1.0000
+         |
+  10-50% |   2.256584  -0.622876  -1.116077
+         |     0.0721     1.0000     0.7932
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION ER_level 
+VARIABLE: Macrophages 
+ 
+                <1% 1-9%    10-50%
+1-9%   1.700984e-01   NA        NA
+10-50% 2.931203e-02    1        NA
+>50%   7.876937e-07    1 0.9514144
+
+ 
+ TEST WITH CLASSIFICATION ER_level 
+VARIABLE: Mast_cells 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 19.7674, df = 3, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |        <1%       >50%       1-9%
+---------+---------------------------------
+    >50% |   4.410254
+         |    0.0000*
+         |
+    1-9% |   2.380733   0.070136
+         |     0.0518     1.0000
+         |
+  10-50% |   2.530410  -0.900635  -0.555819
+         |     0.0342     1.0000     1.0000
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION ER_level 
+VARIABLE: NK_cells 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 21.001, df = 3, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |        <1%       >50%       1-9%
+---------+---------------------------------
+    >50% |   4.491719
+         |    0.0000*
+         |
+    1-9% |   1.361269  -1.119467
+         |     0.5203     0.7888
+         |
+  10-50% |   2.441471  -1.091528   0.383249
+         |     0.0439     0.8251     1.0000
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION ER_level 
+VARIABLE: Neutrophils 
+ 
+                <1% 1-9%    10-50%
+1-9%   1.131298e-01   NA        NA
+10-50% 9.420483e-03    1        NA
+>50%   1.418462e-09    1 0.2684799
+
+ 
+ TEST WITH CLASSIFICATION ER_level 
+VARIABLE: T_cells_CD4 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 16.7092, df = 3, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |        <1%       >50%       1-9%
+---------+---------------------------------
+    >50% |   4.081446
+         |    0.0001*
+         |
+    1-9% |   1.928296  -0.242986
+         |     0.1615     1.0000
+         |
+  10-50% |   2.432290  -0.717210  -0.180400
+         |     0.0450     1.0000     1.0000
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION ER_level 
+VARIABLE: T_cells_CD8 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 14.3509, df = 3, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |        <1%       >50%       1-9%
+---------+---------------------------------
+    >50% |   3.769103
+         |    0.0005*
+         |
+    1-9% |   1.571896  -0.458254
+         |     0.3479     1.0000
+         |
+  10-50% |   2.120458  -0.823759  -0.049986
+         |     0.1019     1.0000     1.0000
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION ER_level 
+VARIABLE: T_cells_gamma_delta 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 21.5099, df = 3, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |        <1%       >50%       1-9%
+---------+---------------------------------
+    >50% |   4.607625
+         |    0.0000*
+         |
+    1-9% |   1.965578  -0.510953
+         |     0.1480     1.0000
+         |
+  10-50% |   2.527685  -1.089881  -0.149795
+         |     0.0344     0.8273     1.0000
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION ER_level 
+VARIABLE: T_regulatory_cells 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 19.1557, df = 3, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |        <1%       >50%       1-9%
+---------+---------------------------------
+    >50% |   4.365746
+         |    0.0000*
+         |
+    1-9% |   2.205336  -0.100085
+         |     0.0823     1.0000
+         |
+  10-50% |   2.636866  -0.722024  -0.308433
+         |     0.0251     1.0000     1.0000
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION ER_level 
+VARIABLE: Macrophages_M1 
+ 
+                <1% 1-9%    10-50%
+1-9%   1.033206e-01   NA        NA
+10-50% 4.128861e-02    1        NA
+>50%   3.328966e-07    1 0.5260369
+
+ 
+ TEST WITH CLASSIFICATION ER_level 
+VARIABLE: Macrophages_M2 
+ 
+              <1% 1-9% 10-50%
+1-9%   0.92041037   NA     NA
+10-50% 1.00000000    1     NA
+>50%   0.01632418    1      1
+
+ 
+ TEST WITH CLASSIFICATION ER_level 
+VARIABLE: Endothelial 
+ 
+             <1% 1-9% 10-50%
+1-9%   1.0000000   NA     NA
+10-50% 0.3066594    1     NA
+>50%   0.0141628    1      1
+
+ 
+ TEST WITH CLASSIFICATION ER_level 
+VARIABLE: Fibroblasts 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 20.0504, df = 3, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |        <1%       >50%       1-9%
+---------+---------------------------------
+    >50% |  -4.222230
+         |    0.0001*
+         |
+    1-9% |  -0.722569   1.676094
+         |     1.0000     0.2812
+         |
+  10-50% |  -3.103697  -0.012603  -1.477629
+         |    0.0057*     1.0000     0.4185
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION ER_level 
+VARIABLE: Monocytes 
+ 
+# A tibble: 6 × 8
+  .y.       group1 group2 estimate conf.low conf.high p.adj p.adj.signif
+* <chr>     <chr>  <chr>     <dbl>    <dbl>     <dbl> <dbl> <chr>       
+1 Monocytes <1%    1-9%   -0.0314   -0.0884   0.0256  0.455 ns          
+2 Monocytes <1%    10-50% -0.0236   -0.0649   0.0177  0.445 ns          
+3 Monocytes <1%    >50%   -0.0358   -0.0691  -0.00246 0.031 *           
+4 Monocytes 1-9%   10-50%  0.00781  -0.0468   0.0624  0.979 ns          
+5 Monocytes 1-9%   >50%   -0.00440  -0.0543   0.0455  0.994 ns          
+6 Monocytes 10-50% >50%   -0.0122   -0.0406   0.0161  0.667 ns          
+
+ 
+ TEST WITH CLASSIFICATION ER_level 
+VARIABLE: Plasma_cells 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 17.4317, df = 3, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |        <1%       >50%       1-9%
+---------+---------------------------------
+    >50% |   4.107906
+         |    0.0001*
+         |
+    1-9% |   2.531795   0.417270
+         |     0.0340     1.0000
+         |
+  10-50% |   2.584637  -0.546449  -0.666037
+         |     0.0292     1.0000     1.0000
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION ER_level 
+VARIABLE: Immune_Score 
+ 
+                <1% 1-9%    10-50%
+1-9%   1.198832e-01   NA        NA
+10-50% 5.457602e-02    1        NA
+>50%   3.185495e-06    1 0.9334407

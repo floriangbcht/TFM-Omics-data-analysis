@@ -1,0 +1,300 @@
+ TEST WITH CLASSIFICATION kmeans3 
+VARIABLE: B_cells 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 49.8538, df = 2, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |       High        Low
+---------+----------------------
+     Low |  -5.182974
+         |    0.0000*
+         |
+Moderate |  -6.193598   0.690698
+         |    0.0000*     0.7346
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION kmeans3 
+VARIABLE: Cytotoxic_cells 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 57.4083, df = 2, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |       High        Low
+---------+----------------------
+     Low |  -5.923408
+         |    0.0000*
+         |
+Moderate |  -6.362303   1.290952
+         |    0.0000*     0.2951
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION kmeans3 
+VARIABLE: Dendritic_cells 
+ 
+# A tibble: 3 × 8
+  .y.             group1   group2   estimate conf.low conf.high        p.adj p.adj.signif
+* <chr>           <chr>    <chr>       <dbl>    <dbl>     <dbl>        <dbl> <chr>       
+1 Dendritic_cells Low      Moderate  -0.0112  -0.0420    0.0197 0.666        ns          
+2 Dendritic_cells Low      High      -0.0548  -0.0846   -0.0250 0.0000949    ****        
+3 Dendritic_cells Moderate High      -0.0436  -0.0614   -0.0259 0.0000000465 ****        
+
+ 
+ TEST WITH CLASSIFICATION kmeans3 
+VARIABLE: Eosinophils 
+ 
+# A tibble: 3 × 8
+  .y.         group1   group2   estimate conf.low conf.high      p.adj p.adj.signif
+* <chr>       <chr>    <chr>       <dbl>    <dbl>     <dbl>      <dbl> <chr>       
+1 Eosinophils Low      Moderate -0.00203  -0.0295   0.0254  0.983      ns          
+2 Eosinophils Low      High     -0.0362   -0.0624  -0.00990 0.004      **          
+3 Eosinophils Moderate High     -0.0341   -0.0500  -0.0182  0.00000216 ****        
+
+ 
+ TEST WITH CLASSIFICATION kmeans3 
+VARIABLE: Macrophages 
+ 
+                  Low     Moderate
+Moderate 1.363176e-01           NA
+High     4.089257e-08 1.191087e-06
+
+ 
+ TEST WITH CLASSIFICATION kmeans3 
+VARIABLE: Mast_cells 
+ 
+# A tibble: 3 × 8
+  .y.        group1   group2   estimate conf.low conf.high       p.adj p.adj.signif
+* <chr>      <chr>    <chr>       <dbl>    <dbl>     <dbl>       <dbl> <chr>       
+1 Mast_cells Low      Moderate -0.00613  -0.0378    0.0255 0.89        ns          
+2 Mast_cells Low      High     -0.0483   -0.0785   -0.0181 0.000736    ***         
+3 Mast_cells Moderate High     -0.0422   -0.0602   -0.0242 0.000000192 ****        
+
+ 
+ TEST WITH CLASSIFICATION kmeans3 
+VARIABLE: NK_cells 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 33.9648, df = 2, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |       High        Low
+---------+----------------------
+     Low |  -4.354478
+         |    0.0000*
+         |
+Moderate |  -5.056608   0.683216
+         |    0.0000*     0.7417
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION kmeans3 
+VARIABLE: Neutrophils 
+ 
+                  Low     Moderate
+Moderate 6.296934e-03           NA
+High     1.190956e-11 2.399322e-07
+
+ 
+ TEST WITH CLASSIFICATION kmeans3 
+VARIABLE: T_cells_CD4 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 44.6837, df = 2, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |       High        Low
+---------+----------------------
+     Low |  -4.682062
+         |    0.0000*
+         |
+Moderate |  -6.011727   0.332067
+         |    0.0000*     1.0000
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION kmeans3 
+VARIABLE: T_cells_CD8 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 38.4782, df = 2, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |       High        Low
+---------+----------------------
+     Low |  -4.131618
+         |    0.0001*
+         |
+Moderate |  -5.700157   0.016222
+         |    0.0000*     1.0000
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION kmeans3 
+VARIABLE: T_cells_gamma_delta 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 35.0695, df = 2, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |       High        Low
+---------+----------------------
+     Low |  -4.576663
+         |    0.0000*
+         |
+Moderate |  -5.017939   0.925880
+         |    0.0000*     0.5318
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION kmeans3 
+VARIABLE: T_regulatory_cells 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 41.8507, df = 2, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |       High        Low
+---------+----------------------
+     Low |  -4.707745
+         |    0.0000*
+         |
+Moderate |  -5.703349   0.572983
+         |    0.0000*     0.8500
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION kmeans3 
+VARIABLE: Macrophages_M1 
+ 
+# A tibble: 3 × 8
+  .y.            group1   group2   estimate conf.low conf.high      p.adj p.adj.signif
+* <chr>          <chr>    <chr>       <dbl>    <dbl>     <dbl>      <dbl> <chr>       
+1 Macrophages_M1 Low      Moderate  -0.0228  -0.0559    0.0103 0.233      ns          
+2 Macrophages_M1 Low      High      -0.0645  -0.0964   -0.0326 0.000017   ****        
+3 Macrophages_M1 Moderate High      -0.0417  -0.0612   -0.0222 0.00000221 ****        
+
+ 
+ TEST WITH CLASSIFICATION kmeans3 
+VARIABLE: Macrophages_M2 
+ 
+# A tibble: 3 × 8
+  .y.            group1   group2   estimate conf.low conf.high      p.adj p.adj.signif
+* <chr>          <chr>    <chr>       <dbl>    <dbl>     <dbl>      <dbl> <chr>       
+1 Macrophages_M2 Low      Moderate -0.00128  -0.0286   0.0260  0.993      ns          
+2 Macrophages_M2 Low      High     -0.0333   -0.0599  -0.00667 0.01       **          
+3 Macrophages_M2 Moderate High     -0.0320   -0.0477  -0.0163  0.00000729 ****        
+
+ 
+ TEST WITH CLASSIFICATION kmeans3 
+VARIABLE: Endothelial 
+ 
+                  Low  Moderate
+Moderate 1.528419e-06        NA
+High     4.460095e-03 0.0138929
+
+ 
+ TEST WITH CLASSIFICATION kmeans3 
+VARIABLE: Fibroblasts 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 48.413, df = 2, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |       High        Low
+---------+----------------------
+     Low |   2.004251
+         |     0.0676
+         |
+Moderate |  -5.680451  -5.923416
+         |    0.0000*    0.0000*
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION kmeans3 
+VARIABLE: Monocytes 
+ 
+# A tibble: 3 × 8
+  .y.       group1   group2   estimate conf.low conf.high      p.adj p.adj.signif
+* <chr>     <chr>    <chr>       <dbl>    <dbl>     <dbl>      <dbl> <chr>       
+1 Monocytes Low      Moderate -0.00656  -0.0344    0.0212 0.841      ns          
+2 Monocytes Low      High     -0.0393   -0.0662   -0.0124 0.002      **          
+3 Monocytes Moderate High     -0.0327   -0.0483   -0.0171 0.00000373 ****        
+
+ 
+ TEST WITH CLASSIFICATION kmeans3 
+VARIABLE: Plasma_cells 
+ 
+                  Low     Moderate
+Moderate 1.000000e+00           NA
+High     3.513572e-07 1.043848e-10
+
+ 
+ TEST WITH CLASSIFICATION kmeans3 
+VARIABLE: Immune_Score 
+ 
+# A tibble: 3 × 8
+  .y.          group1   group2   estimate conf.low conf.high    p.adj p.adj.signif
+* <chr>        <chr>    <chr>       <dbl>    <dbl>     <dbl>    <dbl> <chr>       
+1 Immune_Score Low      Moderate -0.00994  -0.0396    0.0197 7.06e- 1 ns          
+2 Immune_Score Low      High     -0.0596   -0.0879   -0.0313 7.77e- 6 ****        
+3 Immune_Score Moderate High     -0.0496   -0.0673   -0.0320 3.62e-10 ****  
+      

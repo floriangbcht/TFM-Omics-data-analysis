@@ -1,0 +1,367 @@
+ TEST WITH CLASSIFICATION wardD2_3 
+VARIABLE: B_cells 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 37.3217, df = 2, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |       High        Low
+---------+----------------------
+     Low |  -3.914304
+         |    0.0001*
+         |
+Moderate |  -5.303039  -0.868904
+         |    0.0000*     0.5773
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION wardD2_3 
+VARIABLE: Cytotoxic_cells 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 46.9742, df = 2, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |       High        Low
+---------+----------------------
+     Low |  -4.739729
+         |    0.0000*
+         |
+Moderate |  -5.703743  -0.510321
+         |    0.0000*     0.9147
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION wardD2_3 
+VARIABLE: Dendritic_cells 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 27.9773, df = 2, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |       High        Low
+---------+----------------------
+     Low |  -3.646468
+         |    0.0004*
+         |
+Moderate |  -4.410536  -0.409534
+         |    0.0000*     1.0000
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION wardD2_3 
+VARIABLE: Eosinophils 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 15.6273, df = 2, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |       High        Low
+---------+----------------------
+     Low |  -2.550810
+         |    0.0161*
+         |
+Moderate |  -3.419836  -0.539079
+         |    0.0009*     0.8847
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION wardD2_3 
+VARIABLE: Macrophages 
+ 
+                  Low     Moderate
+Moderate 1.000000e+00           NA
+High     1.019446e-05 6.429561e-05
+
+ 
+ TEST WITH CLASSIFICATION wardD2_3 
+VARIABLE: Mast_cells 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 19.335, df = 2, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |       High        Low
+---------+----------------------
+     Low |  -3.173864
+         |    0.0023*
+         |
+Moderate |  -3.551752  -0.139637
+         |    0.0006*     1.0000
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION wardD2_3 
+VARIABLE: NK_cells 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 25.8722, df = 2, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |       High        Low
+---------+----------------------
+     Low |  -3.316430
+         |    0.0014*
+         |
+Moderate |  -4.377488  -0.648932
+         |    0.0000*     0.7746
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION wardD2_3 
+VARIABLE: Neutrophils 
+ 
+                  Low     Moderate
+Moderate 3.435272e-01           NA
+High     1.234271e-08 7.301372e-05
+
+ 
+ TEST WITH CLASSIFICATION wardD2_3 
+VARIABLE: T_cells_CD4 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 32.292, df = 2, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |       High        Low
+---------+----------------------
+     Low |  -3.430206
+         |    0.0009*
+         |
+Moderate |  -5.060908  -1.073828
+         |    0.0000*     0.4243
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION wardD2_3 
+VARIABLE: T_cells_CD8 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 27.51, df = 2, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |       High        Low
+---------+----------------------
+     Low |  -2.910735
+         |    0.0054*
+         |
+Moderate |  -4.805265  -1.296882
+         |    0.0000*     0.2920
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION wardD2_3 
+VARIABLE: T_cells_gamma_delta 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 27.4068, df = 2, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |       High        Low
+---------+----------------------
+     Low |  -3.543273
+         |    0.0006*
+         |
+Moderate |  -4.414441  -0.495139
+         |    0.0000*     0.9308
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION wardD2_3 
+VARIABLE: T_regulatory_cells 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 29.1226, df = 2, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |       High        Low
+---------+----------------------
+     Low |  -3.492390
+         |    0.0007*
+         |
+Moderate |  -4.661788  -0.722658
+         |    0.0000*     0.7048
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION wardD2_3 
+VARIABLE: Macrophages_M1 
+ 
+# A tibble: 3 × 8
+  .y.            group1   group2   estimate conf.low conf.high    p.adj p.adj.signif
+* <chr>          <chr>    <chr>       <dbl>    <dbl>     <dbl>    <dbl> <chr>       
+1 Macrophages_M1 Low      Moderate -0.00657  -0.0460    0.0329 0.918    ns          
+2 Macrophages_M1 Low      High     -0.0513   -0.0832   -0.0195 0.000679 ***         
+3 Macrophages_M1 Moderate High     -0.0448   -0.0727   -0.0168 0.000699 ***         
+
+ 
+ TEST WITH CLASSIFICATION wardD2_3 
+VARIABLE: Macrophages_M2 
+ 
+# A tibble: 3 × 8
+  .y.            group1   group2   estimate conf.low conf.high p.adj p.adj.signif
+* <chr>          <chr>    <chr>       <dbl>    <dbl>     <dbl> <dbl> <chr>       
+1 Macrophages_M2 Low      Moderate   0.0109  -0.0208   0.0426  0.695 ns          
+2 Macrophages_M2 Low      High      -0.0226  -0.0490   0.00389 0.11  ns          
+3 Macrophages_M2 Moderate High      -0.0335  -0.0550  -0.0119  0.001 ***         
+
+ 
+ TEST WITH CLASSIFICATION wardD2_3 
+VARIABLE: Endothelial 
+ 
+                  Low  Moderate
+Moderate 4.898836e-05        NA
+High     6.044701e-05 0.6932102
+
+ 
+ TEST WITH CLASSIFICATION wardD2_3 
+VARIABLE: Fibroblasts 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 22.5392, df = 2, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |       High        Low
+---------+----------------------
+     Low |   3.760222
+         |    0.0003*
+         |
+Moderate |  -2.195489  -4.669570
+         |     0.0422    0.0000*
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION wardD2_3 
+VARIABLE: Monocytes 
+ 
+# A tibble: 3 × 8
+  .y.       group1   group2   estimate conf.low conf.high p.adj p.adj.signif
+* <chr>     <chr>    <chr>       <dbl>    <dbl>     <dbl> <dbl> <chr>       
+1 Monocytes Low      Moderate  0.00674  -0.0260   0.0395  0.877 ns          
+2 Monocytes Low      High     -0.0284   -0.0552  -0.00158 0.035 *           
+3 Monocytes Moderate High     -0.0351   -0.0577  -0.0125  0.001 ***         
+
+ 
+ TEST WITH CLASSIFICATION wardD2_3 
+VARIABLE: Plasma_cells 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 37.3472, df = 2, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |       High        Low
+---------+----------------------
+     Low |  -3.653870
+         |    0.0004*
+         |
+Moderate |  -5.462463  -1.197881
+         |    0.0000*     0.3464
+
+alpha = 0.05
+Reject Ho if p <= alpha/2
+
+ 
+ TEST WITH CLASSIFICATION wardD2_3 
+VARIABLE: Immune_Score 
+ 
+  Kruskal-Wallis rank sum test
+
+data: x and group
+Kruskal-Wallis chi-squared = 35.5035, df = 2, p-value = 0
+
+
+                           Comparison of x by group                            
+                                 (Bonferroni)                                  
+Col Mean-|
+Row Mean |       High        Low
+---------+----------------------
+     Low |  -4.080687
+         |    0.0001*
+         |
+Moderate |  -4.988963  -0.498488
+         |    0.0000*     0.9272
+
+alpha = 0.05
+Reject Ho if p <= alpha/2

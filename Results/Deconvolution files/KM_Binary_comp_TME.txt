@@ -1,0 +1,113 @@
+ TEST WITH CLASSIFICATION kmeans_GMM2 
+VARIABLE: B_cells 
+ 
+Mann-Whitney test 
+ 3.71256e-05
+ 
+ TEST WITH CLASSIFICATION kmeans_GMM2 
+VARIABLE: Cytotoxic_cells 
+ 
+Mann-Whitney test 
+ 3.986681e-07
+ 
+ TEST WITH CLASSIFICATION kmeans_GMM2 
+VARIABLE: Dendritic_cells 
+ 
+Student test 
+ 0.0004295453
+ 
+ TEST WITH CLASSIFICATION kmeans_GMM2 
+VARIABLE: Eosinophils 
+ 
+Mann-Whitney test 
+ 0.001907919
+ 
+ TEST WITH CLASSIFICATION kmeans_GMM2 
+VARIABLE: Macrophages 
+ 
+Student test 
+ 7.868445e-06
+ 
+ TEST WITH CLASSIFICATION kmeans_GMM2 
+VARIABLE: Mast_cells 
+ 
+Mann-Whitney test 
+ 0.0001438159
+ 
+ TEST WITH CLASSIFICATION kmeans_GMM2 
+VARIABLE: NK_cells 
+ 
+Mann-Whitney test 
+ 0.0001459446
+ 
+ TEST WITH CLASSIFICATION kmeans_GMM2 
+VARIABLE: Neutrophils 
+ 
+Student test 
+ 8.814357e-08
+ 
+ TEST WITH CLASSIFICATION kmeans_GMM2 
+VARIABLE: T_cells_CD4 
+ 
+Mann-Whitney test 
+ 0.0001816546
+ 
+ TEST WITH CLASSIFICATION kmeans_GMM2 
+VARIABLE: T_cells_CD8 
+ 
+Mann-Whitney test 
+ 0.0008828783
+ 
+ TEST WITH CLASSIFICATION kmeans_GMM2 
+VARIABLE: T_cells_gamma_delta 
+ 
+Mann-Whitney test 
+ 6.558213e-05
+ 
+ TEST WITH CLASSIFICATION kmeans_GMM2 
+VARIABLE: T_regulatory_cells 
+ 
+Mann-Whitney test 
+ 0.0001006984
+ 
+ TEST WITH CLASSIFICATION kmeans_GMM2 
+VARIABLE: Macrophages_M1 
+ 
+Student test 
+ 4.559209e-05
+ 
+ TEST WITH CLASSIFICATION kmeans_GMM2 
+VARIABLE: Macrophages_M2 
+ 
+Student test 
+ 0.0255443
+ 
+ TEST WITH CLASSIFICATION kmeans_GMM2 
+VARIABLE: Endothelial 
+ 
+Student test 
+ 0.0001204245
+ 
+ TEST WITH CLASSIFICATION kmeans_GMM2 
+VARIABLE: Fibroblasts 
+ 
+Mann-Whitney test 
+ 1.164562e-05
+ 
+ TEST WITH CLASSIFICATION kmeans_GMM2 
+VARIABLE: Monocytes 
+ 
+Student test 
+ 0.005716439
+ 
+ TEST WITH CLASSIFICATION kmeans_GMM2 
+VARIABLE: Plasma_cells 
+ 
+Mann-Whitney test 
+ 0.0002353394
+ 
+ TEST WITH CLASSIFICATION kmeans_GMM2 
+VARIABLE: Immune_Score 
+ 
+Mann-Whitney test 
+ 8.637072e-06
