@@ -1,0 +1,77 @@
+CLASSIFICATION: ER_level 
+ 
+ # CV training metrics: per fold 
+Random Forest 
+
+377 samples
+ 20 predictor
+  4 classes: 'Neg', 'LowPos', 'ModPos', 'HighPos' 
+
+No pre-processing
+Resampling: Cross-Validated (5 fold, repeated 10 times) 
+Summary of sample sizes: 302, 301, 303, 302, 300, 301, ... 
+Addtional sampling using up-sampling
+
+Resampling results across tuning parameters:
+
+  mtry  logLoss    AUC        prAUC      Accuracy   Kappa      Mean_F1    Mean_Sensitivity  Mean_Specificity  Mean_Pos_Pred_Value  Mean_Neg_Pred_Value
+   2    0.8294932  0.6940817  0.4132040  0.8152247  0.4302449        NaN  0.4153086         0.8475075         0.3615264            0.9259847          
+   5    0.7744127  0.7085704  0.4264233  0.8329385  0.5161940        NaN  0.4542565         0.8782808         0.4407270            0.9404544          
+   9    0.8376098  0.7161423  0.4268344  0.8297519  0.5201808  0.5418726  0.4612568         0.8834820         0.4589908            0.9348879          
+  12    0.8773658  0.7146366  0.4265952  0.8204213  0.5017170        NaN  0.4561174         0.8822818         0.4659868            0.9256391          
+  16    1.0579712  0.7200221  0.4231150  0.8048525  0.4715749  0.5399266  0.4404689         0.8777345         0.4270243            0.9137858          
+  20    1.5291536  0.7087457  0.4123292  0.7841237  0.4359275  0.3888752  0.4340993         0.8733808         0.4190911            0.8967345          
+  Mean_Precision  Mean_Recall  Mean_Detection_Rate  Mean_Balanced_Accuracy
+  0.3615264       0.4153086    0.2038062            0.6314080             
+  0.4407270       0.4542565    0.2082346            0.6662686             
+  0.4589908       0.4612568    0.2074380            0.6723694             
+  0.4659868       0.4561174    0.2051053            0.6691996             
+  0.4270243       0.4404689    0.2012131            0.6591017             
+  0.4190911       0.4340993    0.1960309            0.6537401             
+
+Mean_Balanced_Accuracy was used to select the optimal model using the largest value.
+The final value used for the model was mtry = 9.
+
+ # CV training metrics: overall and per class 
+Confusion Matrix and Statistics
+
+          Reference
+Prediction  Neg LowPos ModPos HighPos
+   Neg      333     73     66      29
+   LowPos    40      6     15       1
+   ModPos    14     10     13      44
+   HighPos   33     41    276    2776
+
+Overall Statistics
+                                          
+               Accuracy : 0.8297          
+                 95% CI : (0.8173, 0.8416)
+    No Information Rate : 0.756           
+    P-Value [Acc > NIR] : < 2.2e-16       
+                                          
+                  Kappa : 0.5212          
+                                          
+ Mcnemar's Test P-Value : < 2.2e-16       
+
+Statistics by Class:
+
+                     Class: Neg Class: LowPos Class: ModPos Class: HighPos
+Sensitivity             0.79286      0.046154      0.035135         0.9740
+Specificity             0.94985      0.984615      0.980000         0.6196
+Pos Pred Value          0.66467      0.096774      0.160494         0.8880
+Neg Pred Value          0.97339      0.966559      0.903226         0.8851
+Precision               0.66467      0.096774      0.160494         0.8880
+Recall                  0.79286      0.046154      0.035135         0.9740
+F1                      0.72313      0.062500      0.057650         0.9290
+Prevalence              0.11141      0.034483      0.098143         0.7560
+Detection Rate          0.08833      0.001592      0.003448         0.7363
+Detection Prevalence    0.13289      0.016446      0.021485         0.8292
+Balanced Accuracy       0.87135      0.515385      0.507568         0.7968
+
+ # CV training macro-metrics 
+               F1 Balanced Accuracy               AUC 
+        0.4430816         0.6727766         0.7384000 
+
+ # Best hyperparameter results 
+  mtry Mean_Balanced_Accuracy Mean_Balanced_AccuracySD       AUC      AUCSD
+3    9              0.6723694               0.03549198 0.7161423 0.04921915

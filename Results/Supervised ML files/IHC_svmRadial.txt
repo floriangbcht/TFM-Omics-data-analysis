@@ -1,0 +1,78 @@
+CLASSIFICATION: ER_level 
+ 
+ # CV training metrics: per fold 
+Support Vector Machines with Radial Basis Function Kernel 
+
+377 samples
+ 20 predictor
+  4 classes: 'Neg', 'LowPos', 'ModPos', 'HighPos' 
+
+No pre-processing
+Resampling: Cross-Validated (5 fold, repeated 10 times) 
+Summary of sample sizes: 302, 301, 303, 302, 300, 301, ... 
+Addtional sampling using up-sampling
+
+Resampling results across tuning parameters:
+
+  C     logLoss    AUC        prAUC      Accuracy   Kappa      Mean_F1    Mean_Sensitivity  Mean_Specificity  Mean_Pos_Pred_Value  Mean_Neg_Pred_Value
+  0.25  0.8902510  0.7279134  0.4228997  0.6205466  0.2643974  0.4773313  0.4450444         0.8371735         0.4413959            0.8112426          
+  0.50  0.8616579  0.7326382  0.4324328  0.6816915  0.3109027  0.5129974  0.4359299         0.8457915         0.4525748            0.8276726          
+  1.00  0.8566615  0.7439398  0.4397874  0.7122930  0.3324165  0.5597963  0.4425287         0.8455645         0.4746478            0.8363922          
+  2.00  0.8695249  0.7499531  0.4424683  0.7218524  0.3368048  0.5407051  0.4346162         0.8442218         0.4626103            0.8402947          
+  4.00  0.9227259  0.7443636  0.4355323  0.7366805  0.3508319  0.5410111  0.4386195         0.8454502         0.4642744            0.8472795          
+  8.00  0.9377227  0.7451813  0.4331596  0.7563151  0.3678601  0.5268544  0.4346742         0.8469012         0.4620678            0.8591321          
+  Mean_Precision  Mean_Recall  Mean_Detection_Rate  Mean_Balanced_Accuracy
+  0.4413959       0.4450444    0.1551367            0.6411089             
+  0.4525748       0.4359299    0.1704229            0.6408607             
+  0.4746478       0.4425287    0.1780733            0.6440466             
+  0.4626103       0.4346162    0.1804631            0.6394190             
+  0.4642744       0.4386195    0.1841701            0.6420348             
+  0.4620678       0.4346742    0.1890788            0.6407877             
+
+Tuning parameter 'sigma' was held constant at a value of 0.08423164
+Mean_Balanced_Accuracy was used to select the optimal model using the largest value.
+The final values used for the model were sigma = 0.08423164 and C = 1.
+
+ # CV training metrics: overall and per class 
+Confusion Matrix and Statistics
+
+          Reference
+Prediction  Neg LowPos ModPos HighPos
+   Neg      276     39     39      27
+   LowPos    13     12     18      47
+   ModPos    49     23     72     451
+   HighPos   82     56    241    2325
+
+Overall Statistics
+                                          
+               Accuracy : 0.7122          
+                 95% CI : (0.6975, 0.7266)
+    No Information Rate : 0.756           
+    P-Value [Acc > NIR] : 1               
+                                          
+                  Kappa : 0.331           
+                                          
+ Mcnemar's Test P-Value : <2e-16          
+
+Statistics by Class:
+
+                     Class: Neg Class: LowPos Class: ModPos Class: HighPos
+Sensitivity             0.65714      0.092308       0.19459         0.8158
+Specificity             0.96866      0.978571       0.84618         0.5880
+Pos Pred Value          0.72441      0.133333       0.12101         0.8598
+Neg Pred Value          0.95751      0.967935       0.90614         0.5075
+Precision               0.72441      0.133333       0.12101         0.8598
+Recall                  0.65714      0.092308       0.19459         0.8158
+F1                      0.68914      0.109091       0.14922         0.8372
+Prevalence              0.11141      0.034483       0.09814         0.7560
+Detection Rate          0.07321      0.003183       0.01910         0.6167
+Detection Prevalence    0.10106      0.023873       0.15782         0.7172
+Balanced Accuracy       0.81290      0.535440       0.52039         0.7019
+
+ # CV training macro-metrics 
+               F1 Balanced Accuracy               AUC 
+        0.4461717         0.6426603         0.7505000 
+
+ # Best hyperparameter results 
+       sigma C Mean_Balanced_Accuracy Mean_Balanced_AccuracySD       AUC      AUCSD
+3 0.08423164 1              0.6440466               0.05272108 0.7439398 0.04652332

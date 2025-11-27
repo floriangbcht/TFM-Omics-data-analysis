@@ -1,0 +1,76 @@
+CLASSIFICATION: kmeans3 
+ 
+ # CV training metrics: per fold 
+Random Forest 
+
+377 samples
+ 20 predictor
+  3 classes: 'Low', 'Moderate', 'High' 
+
+No pre-processing
+Resampling: Cross-Validated (5 fold, repeated 10 times) 
+Summary of sample sizes: 302, 301, 302, 302, 301, 303, ... 
+Addtional sampling using up-sampling
+
+Resampling results across tuning parameters:
+
+  mtry  logLoss     AUC        prAUC       Accuracy   Kappa      Mean_F1    Mean_Sensitivity  Mean_Specificity  Mean_Pos_Pred_Value  Mean_Neg_Pred_Value
+   2    0.43552603  0.9839984  0.91315560  0.9281355  0.8801960  0.9040030  0.8902376         0.9610150         0.9331441            0.9652496          
+   5    0.19139509  0.9995648  0.94472797  0.9848938  0.9750945  0.9817763  0.9804445         0.9921829         0.9848830            0.9921546          
+   9    0.06858112  0.9998608  0.93962198  0.9941469  0.9903554  0.9929437  0.9931543         0.9970720         0.9935177            0.9968858          
+  12    0.03392729  0.9999702  0.89889359  0.9952174  0.9921175  0.9940013  0.9939430         0.9976018         0.9946982            0.9975083          
+  16    0.01663799  0.9999802  0.56972885  0.9954875  0.9925538  0.9945969  0.9942340         0.9976683         0.9955016            0.9976178          
+  20    0.02198041  0.9998286  0.03197256  0.9954875  0.9925538  0.9945969  0.9942340         0.9976683         0.9955016            0.9976178          
+  Mean_Precision  Mean_Recall  Mean_Detection_Rate  Mean_Balanced_Accuracy
+  0.9331441       0.8902376    0.3093785            0.9256263             
+  0.9848830       0.9804445    0.3282979            0.9863137             
+  0.9935177       0.9931543    0.3313823            0.9951132             
+  0.9946982       0.9939430    0.3317391            0.9957724             
+  0.9955016       0.9942340    0.3318292            0.9959512             
+  0.9955016       0.9942340    0.3318292            0.9959512             
+
+Mean_Balanced_Accuracy was used to select the optimal model using the largest value.
+The final value used for the model was mtry = 16.
+
+ # CV training metrics: overall and per class 
+Confusion Matrix and Statistics
+
+          Reference
+Prediction  Low Moderate High
+  Low       534        2    0
+  Moderate    6     1418    9
+  High        0        0 1801
+
+Overall Statistics
+                                          
+               Accuracy : 0.9955          
+                 95% CI : (0.9928, 0.9974)
+    No Information Rate : 0.4801          
+    P-Value [Acc > NIR] : < 2.2e-16       
+                                          
+                  Kappa : 0.9926          
+                                          
+ Mcnemar's Test P-Value : NA              
+
+Statistics by Class:
+
+                     Class: Low Class: Moderate Class: High
+Sensitivity              0.9889          0.9986      0.9950
+Specificity              0.9994          0.9936      1.0000
+Pos Pred Value           0.9963          0.9895      1.0000
+Neg Pred Value           0.9981          0.9991      0.9954
+Precision                0.9963          0.9895      1.0000
+Recall                   0.9889          0.9986      0.9950
+F1                       0.9926          0.9940      0.9975
+Prevalence               0.1432          0.3767      0.4801
+Detection Rate           0.1416          0.3761      0.4777
+Detection Prevalence     0.1422          0.3801      0.4777
+Balanced Accuracy        0.9941          0.9961      0.9975
+
+ # CV training macro-metrics 
+               F1 Balanced Accuracy               AUC 
+        0.9947047         0.9959176         0.9999000 
+
+ # Best hyperparameter results 
+  mtry Mean_Balanced_Accuracy Mean_Balanced_AccuracySD       AUC        AUCSD
+5   16              0.9959512              0.009795813 0.9999802 8.407011e-05

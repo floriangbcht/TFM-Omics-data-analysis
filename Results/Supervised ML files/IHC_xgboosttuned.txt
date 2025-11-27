@@ -1,0 +1,87 @@
+CLASSIFICATION: ER_level 
+ 
+ # CV training metrics: per fold 
+eXtreme Gradient Boosting 
+
+377 samples
+ 20 predictor
+  4 classes: 'Neg', 'LowPos', 'ModPos', 'HighPos' 
+
+No pre-processing
+Resampling: Cross-Validated (5 fold, repeated 10 times) 
+Summary of sample sizes: 302, 301, 303, 302, 300, 301, ... 
+Addtional sampling using up-sampling
+
+Resampling results across tuning parameters:
+
+  gamma  logLoss    AUC        prAUC      Accuracy   Kappa      Mean_F1    Mean_Sensitivity  Mean_Specificity  Mean_Pos_Pred_Value  Mean_Neg_Pred_Value
+  0.0    0.7229486  0.7387393  0.4406745  0.8125362  0.4923897  0.5642030  0.4537396         0.8813978         0.4375302            0.9156733          
+  0.1    0.7135059  0.7354363  0.4413351  0.8149118  0.4983710  0.6450163  0.4579710         0.8828684         0.4466791            0.9177606          
+  0.2    0.7031916  0.7387709  0.4429684  0.8170768  0.5054161  0.6262847  0.4643416         0.8834218         0.4493279            0.9178930          
+  0.4    0.6777271  0.7362584  0.4407039  0.8148698  0.5029498  0.5629166  0.4640137         0.8842822         0.4547619            0.9162031          
+  0.6    0.6633526  0.7355870  0.4421613  0.8141395  0.4983425  0.5684383  0.4560829         0.8838852         0.4516820            0.9183378          
+  0.8    0.6612092  0.7300591  0.4398935  0.8104621  0.4932053  0.5782356  0.4601666         0.8819048         0.4440364            0.9114426          
+  1.0    0.6440919  0.7369387  0.4420447  0.8114378  0.4999341  0.6207798  0.4687902         0.8842677         0.4575200            0.9118730          
+  Mean_Precision  Mean_Recall  Mean_Detection_Rate  Mean_Balanced_Accuracy
+  0.4375302       0.4537396    0.2031341            0.6675687             
+  0.4466791       0.4579710    0.2037280            0.6704197             
+  0.4493279       0.4643416    0.2042692            0.6738817             
+  0.4547619       0.4640137    0.2037175            0.6741479             
+  0.4516820       0.4560829    0.2035349            0.6699840             
+  0.4440364       0.4601666    0.2026155            0.6710357             
+  0.4575200       0.4687902    0.2028594            0.6765289             
+
+Tuning parameter 'nrounds' was held constant at a value of 100
+Tuning parameter 'max_depth' was held constant at a value of 4
+Tuning parameter 'eta' was
+ held constant at a value of 0.2
+Tuning parameter 'colsample_bytree' was held constant at a value of 0.6
+Tuning parameter 'min_child_weight' was held
+ constant at a value of 3
+Tuning parameter 'subsample' was held constant at a value of 0.6
+Mean_Balanced_Accuracy was used to select the optimal model using the largest value.
+The final values used for the model were nrounds = 100, max_depth = 4, eta = 0.2, gamma = 1, colsample_bytree = 0.6, min_child_weight = 3 and subsample = 0.6.
+
+ # CV training metrics: overall and per class 
+Confusion Matrix and Statistics
+
+          Reference
+Prediction  Neg LowPos ModPos HighPos
+   Neg      335     73     55      34
+   LowPos    32      6     15       5
+   ModPos    40     11     33     126
+   HighPos   13     40    267    2685
+
+Overall Statistics
+                                          
+               Accuracy : 0.8114          
+                 95% CI : (0.7985, 0.8238)
+    No Information Rate : 0.756           
+    P-Value [Acc > NIR] : < 2.2e-16       
+                                          
+                  Kappa : 0.4994          
+                                          
+ Mcnemar's Test P-Value : < 2.2e-16       
+
+Statistics by Class:
+
+                     Class: Neg Class: LowPos Class: ModPos Class: HighPos
+Sensitivity             0.79762      0.046154      0.089189         0.9421
+Specificity             0.95164      0.985714      0.947941         0.6522
+Pos Pred Value          0.67404      0.103448      0.157143         0.8935
+Neg Pred Value          0.97403      0.966595      0.905337         0.7843
+Precision               0.67404      0.103448      0.157143         0.8935
+Recall                  0.79762      0.046154      0.089189         0.9421
+F1                      0.73064      0.063830      0.113793         0.9172
+Prevalence              0.11141      0.034483      0.098143         0.7560
+Detection Rate          0.08886      0.001592      0.008753         0.7122
+Detection Prevalence    0.13183      0.015385      0.055703         0.7971
+Balanced Accuracy       0.87463      0.515934      0.518565         0.7971
+
+ # CV training macro-metrics 
+               F1 Balanced Accuracy               AUC 
+        0.4563578         0.6765673         0.7413000 
+
+ # Best hyperparameter results 
+  nrounds max_depth eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD       AUC      AUCSD
+7     100         4 0.2     1              0.6                3       0.6              0.6765289               0.03642704 0.7369387 0.04179119

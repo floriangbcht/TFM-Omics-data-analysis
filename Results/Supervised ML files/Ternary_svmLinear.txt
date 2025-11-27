@@ -1,0 +1,65 @@
+CLASSIFICATION: kmeans3 
+ 
+ # CV training metrics: per fold 
+Support Vector Machines with Linear Kernel 
+
+377 samples
+ 20 predictor
+  3 classes: 'Low', 'Moderate', 'High' 
+
+No pre-processing
+Resampling: Cross-Validated (5 fold, repeated 10 times) 
+Summary of sample sizes: 302, 301, 302, 302, 301, 303, ... 
+Addtional sampling using up-sampling
+
+Resampling results:
+
+  logLoss    AUC        prAUC      Accuracy   Kappa      Mean_F1    Mean_Sensitivity  Mean_Specificity  Mean_Pos_Pred_Value  Mean_Neg_Pred_Value  Mean_Precision
+  0.1092451  0.9968142  0.9430766  0.9655104  0.9432699  0.9650686  0.9663673         0.9813382         0.9654017            0.980913             0.9654017     
+  Mean_Recall  Mean_Detection_Rate  Mean_Balanced_Accuracy
+  0.9663673    0.3218368            0.9738527             
+
+Tuning parameter 'C' was held constant at a value of 1
+
+ # CV training metrics: overall and per class 
+Confusion Matrix and Statistics
+
+          Reference
+Prediction  Low Moderate High
+  Low       524       19    0
+  Moderate   16     1366   60
+  High        0       35 1750
+
+Overall Statistics
+                                          
+               Accuracy : 0.9655          
+                 95% CI : (0.9592, 0.9711)
+    No Information Rate : 0.4801          
+    P-Value [Acc > NIR] : < 2.2e-16       
+                                          
+                  Kappa : 0.9433          
+                                          
+ Mcnemar's Test P-Value : NA              
+
+Statistics by Class:
+
+                     Class: Low Class: Moderate Class: High
+Sensitivity              0.9704          0.9620      0.9669
+Specificity              0.9941          0.9677      0.9821
+Pos Pred Value           0.9650          0.9473      0.9804
+Neg Pred Value           0.9950          0.9768      0.9698
+Precision                0.9650          0.9473      0.9804
+Recall                   0.9704          0.9620      0.9669
+F1                       0.9677          0.9546      0.9736
+Prevalence               0.1432          0.3767      0.4801
+Detection Rate           0.1390          0.3623      0.4642
+Detection Prevalence     0.1440          0.3825      0.4735
+Balanced Accuracy        0.9822          0.9648      0.9745
+
+ # CV training macro-metrics 
+               F1 Balanced Accuracy               AUC 
+        0.9652780         0.9738522         0.9963000 
+
+ # Best hyperparameter results 
+  C Mean_Balanced_Accuracy Mean_Balanced_AccuracySD       AUC       AUCSD
+1 1              0.9738527               0.01611864 0.9968142 0.003174839
