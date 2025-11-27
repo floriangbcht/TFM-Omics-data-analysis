@@ -26,7 +26,7 @@ The **"Function"** folder includes the following files:
 - **classifvskmeans.R** is a custom function for comparing the HCLUST-derived alternative classifications with those derived from K-means (for these specific data). Requires *plotclust()* and *colplotclust()*.
 - **grouptest.R** is a custom function for computing between group differences according to the number of categories, data normality, and homoscedasticity. It includes arguments for computing other comparative results.
 
-The **"Results"** folder contains two sub-folders, **"HTML reports"** and XXXXXXXXXXXXXXXXXX. **"HTML reports"** includes the reports generated from the *.Rmd* documents in *.html* format.
+The **"Results"** folder contains three sub-folders, **"HTML reports"**, **"Deconvolution files"**, and **"Supervised ML files"**. **"HTML reports"** includes the reports generated from the *.Rmd* documents in *.html* format. **"Deconvolution files"** includes the results of among-group comparison tests based on the abundance scores (independently for each immunological feature) for all investigated classifications. **"Supervised ML files"** includes the cross-validation results from training the models using the selected classifications.
 
 
 **WARNING: SOME FILES ARE NOT PROVIDED BECAUSE OF EXCEEDING MAXIMUM FILE SIZE ALLOWED ON GITHUB BUT ARE HERE DESCRIBED ANYWAY**
