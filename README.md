@@ -22,8 +22,10 @@ Here is a breakdown of the included files:
 - **svmmodels.rda**, **rfmodels.rda**, and **xgboostmodels.rda** are lists that contain the results of all trained SVM, RF, and XGBoost models, respectively. These results includes resample performances (averaged across folds), performances computed from pooled resamples, and ROC curves.
 - **modelsML.rda** is a list that only contains the results of the best-tuned/best-performing (selected) models, for each model-type (algorithm), for each selected classification.
 - **evaluationML.rda** is a list that contains the test results of the selected models, for each model-type (algorithm), for each selected classification. This includes the re-trained models (no CV), the performances computed from test predictions, and ROC curves.
+- **ML_models_results_CV&test.xlsx** provides confusion matrices and macro-metrics computed from pooled held-out resamples (training with CV) and test data
 - **fullplotshap.rda** is a list that contains the mean raw and absolute SHAP values (per-class values) and feature importance plots of the selected models, for each model-type (algorithm), for each selected classification.
 - **modelsESR1.rda** is a list that contains the results of ML models trained based on ESR1 expression only, using the model settings of the previously selected models.
+
 **Importantly, The "GDC data/TCGA-BRCA" folder contains two sub-folders, "Transcriptome_Profiling/Gene_Expression_Quantification" and "Clinical/Clinical_Supplement", including all files of the initial data download, therefore corresponding to the base TCGA-BRCA transcriptomic data and clinical information used in the present project.** 
 
 The **"Function"** folder includes the following files:
