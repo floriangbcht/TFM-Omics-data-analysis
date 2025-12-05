@@ -1,6 +1,6 @@
 
-## Function for computing between group differences according to the number of categories (2 or more), data normality, and homoscedasticity
-## Possibility of computing median comparison results, adjusted p-value (within a comparative context), and effect size (magnitude of the differences)
+### Function for computing among group differences according to the number of categories (2 or more), data normality, and homoscedasticity
+### It includes the possibility of computing median comparison results, adjusted p-value (within a comparative context), and effect size (magnitude of the differences)
 
 grouptest <- function(yvar, cluster, data, resulttest = T, mediancomp = F, pvaladj = F, ncomps = NULL, magnitude = F, printtable = F, writetable = F){
   cat("\n", "\n", "TEST WITH CLASSIFICATION", cluster, "\n")
