@@ -1,0 +1,1166 @@
+---
+title: "Supervised ML"
+author: "Florian Bouchet"
+output:
+  html_document:
+    theme: cerulean
+    highlight: textmate
+    code_folding: show
+  word_document:
+    reference_docx: "Template.docx"
+---
+
+```{r class.source = 'fold-hide', setup, include=FALSE}
+library(knitr)
+library(rmdformats)
+
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=TRUE,
+	             cache=FALSE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
+```
+
+Packages and functions that will be useful:
+
+```{r}
+# Loading packages
+library(caret)
+library(ggplot2)
+library(cowplot)
+library(dplyr)
+library(pROC)
+
+# Loading functions
+source(file = "colplotclust.R")
+source(file = "mlmodel.R")
+source(file = "compMLmodels.R")
+source(file = "plotshap.R")
+```
+
+We first load the primary data that will be used.
+
+```{r}
+# Loading the 'combined' table
+load(file="combined.rda")
+head(combined)
+```
+
+The objective of the present part of the study is to fit ML models using ESR1 expression as well as the 19 abundance scores (18 cell types + immune score) previously obtained by deconvolution and to compare different algorithms (SVM, RF, and XGBoost). Ultimately, the classifications themselves can be compared. In the present document, many chunks are not run due to high computing time and/or because results are already available from the repository. But all important results are showed and commented. Similarly, all steps are commented.
+
+<br>
+
+### DATA PREPARATION
+
+We will only keep the 'kmeans3' and 'kmeans_GMM2' as alternative classifications, following the results of our previous comparative analyses.
+Also, we need to modify the category names of the traditional IHC classification, because otherwise we can have issues during downstream analyses.
+
+```{r}
+# Removing the least interesting alternative classifications
+combined <- combined[-c(22,24,25)]
+
+# Renaming the IHC classification levels
+levels(combined$ER_level) <- c("Neg", "LowPos", "ModPos", "HighPos")
+head(combined) # Taking a look at the data after modification
+```
+
+We now split the whole data set into training (80%) and test (20%) sets. Subsequently, we take a look at the resulting sample size of the categories (classes) for each classification.
+
+```{r}
+# Creating indices for training set
+set.seed(123) # For reproducibility
+indices <- createDataPartition(seq(nrow(combined)), p = 0.8, list = F)
+
+# Splitting the data into training and test sets
+datatrain <- combined[indices,]
+testdata <- combined[-indices,]
+
+# Comparing the resulting sample sizes
+for(i in colnames(combined)[21:23]){
+  cat(i, "\n")
+  print(table(datatrain[,i]))
+  print(table(testdata[,i]))
+  cat("\n", "\n")
+}
+```
+
+We observe that the sample sizes can be small, especially for the testing sets, and in the traditional IHC classification in particular. To deal efficiently with such small sample sizes, random oversampling will be applied in combination with repeated k-fold cross-validation (CV).
+The results based on the held-out resamples during CV training will be used as the primary results for assessing the model performance. The results based on the test set can be viewed as "health check", a final evaluation.
+
+Before training the models, the data should be standardized. It is highly recommended for SVM but not mandatory for RF and XGBoost. For homogeneity and comparative purpose however, we will apply standardization to the whole dataset regardless of the ML model involved. We use the mean and standard deviation of the training set for that purpose:
+
+```{r}
+# Retrieving the mean and standard deviation of the training set
+scalestand <- preProcess(datatrain[1:20], method = c("center", "scale"))
+# Standardizing the training set
+datatrain <- predict(scalestand, datatrain)
+# Standardizing the testing set
+testdata <- predict(scalestand, testdata)
+```
+
+The *train()* function of the **caret** package is the primary function for training ML model that will be used here. A custom function called *mlmodel()* was developed to train a model and show the results, and compute important per-class and average per-class (macro) metrics from individual predictions—including ROC curves and AUCs—for resamples (CV) or test data (after refitting a model on the full training set).
+
+For the reasons previously mentioned, we will apply 5-fold CV, repeated 10 times, and integrating random oversampling for smaller classes during each fold. We will need prediction probabilities for ROC curves and subsequent analyses but only those corresponding to the best model when tuning is done. We also need multiclass metrics in order to obtain metrics others than just Accuracy and Kappa. Let's remind that the evaluation metric (the metric used for defining the best model, i.e., the model with the best hyperparameters) used here is the Balanced Accuracy.
+
+```{r, eval=FALSE}
+# Setting of the control parameters for the trained model
+controltrain <- trainControl(method="repeatedcv", number=5, repeats = 10, sampling = "up", classProbs = T, summaryFunction = multiClassSummary, savePredictions = "final") # ClassProbs=T for saving prediction probabilites, savePredictions="final" for only saving those corresponding to the best model, summaryFunction=multiClassSummary for all metrics
+```
+
+In the next sections, the SVM, RF, and XGBoost algorithms will be used on the training set to tune models and find the best hyperparameters based on the Balanced Accuracy and AUC (averaged across folds). The results of the trained models are saved into separate text files (the specific name of each file is specified after the argument 'outfile=' when using the *mlmodel()* function).
+
+<br>
+
+### SUPPORT VECTOR MACHINE MODELS
+
+Let's start with SVM. Two methods are here explored and compared, linear SVM and SVM with radial basis function kernel, this latter being the most popular kernel function. The reason behind the use of both linear and kernel-based SVM is that we don't know a priori if our classes are linearly separable in their original space (20 features so 20 dimensions). For each classification, the model is first computed with default tuning grid (6 default values) and then, based on this first run, recomputed with a selective grid of values in order to efficiently refine the hyperparameter(s).
+
+In the case of linear SMV, the only hyperparameter is *C* and its default value (when leaving default tuning) is always 1 so it was chosen to use the following fixed tuning grid when tuning manually: seq(0.2,3,0.2).
+Regarding RBF SVM, the hyperparameters are *Sigma* and *C*. *Sigma* is calculated from the matrix of input features and is then fixed so that only **C is in fact tuned when default tuning is used. Here *Sigma* = 0.08423164. Therefore, when tuning manually, the following fixed tuning grid was applied: seq(0.05,0.12,0.01). The tuning grid for *C* was chosen according to the best default *C* found previously when using default tuning.
+
+```{r, eval=FALSE}
+## Traditional IHC classification
+
+# Default linear SVM
+IHC_svmLinear <- mlmodel(train = datatrain[-c(22,23)], model="svmLinear", res = T, outfile="IHC_svmLinear.txt") # Default C is 1
+# Linear SVM manually tuned
+IHC_svmLineartuned <- mlmodel(train = datatrain[-c(22,23)], model="svmLinear", tunegrid=expand.grid(C = seq(0.2,3,0.2)), res = T, outfile="IHC_svmLineartuned.txt") # Best C = 1.6
+# Default RBF SVM
+IHC_svmRadial <- mlmodel(train = datatrain[-c(22,23)], model="svmRadial", res = T, outfile="IHC_svmRadial.txt") # Best C = 1
+# RBF SVM manually tuned
+IHC_svmRadialtuned <- mlmodel(train = datatrain[-c(22,23)], model="svmRadial", tunegrid=expand.grid(sigma = seq(0.05,0.12,0.01), C = seq(0.2,2,0.2)), res = T, outfile="IHC_svmRadialtuned.txt") # Best Sigma = 0.06 and C = 1.6
+
+
+## Alternative ternary classification
+
+# Default linear SVM
+Ternary_svmLinear <- mlmodel(train = datatrain[-c(21,23)], model="svmLinear", res = T, outfile="Ternary_svmLinear.txt") # Default C is 1
+# Linear SVM manually tuned
+Ternary_svmLineartuned <- mlmodel(train = datatrain[-c(21,23)], model="svmLinear", tunegrid=expand.grid(C = seq(0.2,3,0.2)), res = T, outfile="Ternary_svmLineartuned.txt") # Best C = 2.6
+# Default RBF SVM
+Ternary_svmRadial <- mlmodel(train = datatrain[-c(21,23)], model="svmRadial", res = T, outfile="Ternary_svmRadial.txt") # Best C = 2
+# RBF SVM manually tuned
+Ternary_svmRadialtuned <- mlmodel(train = datatrain[-c(21,23)], model="svmRadial", tunegrid=expand.grid(sigma = seq(0.05,0.12,0.01), C = seq(1,3,0.2)), res = T, outfile="Ternary_svmRadialtuned.txt") # Best Sigma = 0.05 and C = 2
+
+
+## Alternative binary classification
+
+# Default linear SVM
+Binary_svmLinear <- mlmodel(train = datatrain[-c(21,22)], model="svmLinear", res = T, outfile="Binary_svmLinear.txt") # Default C is 1
+# Linear SVM manually tuned
+Binary_svmLineartuned <- mlmodel(train = datatrain[-c(21,22)], model="svmLinear", tunegrid=expand.grid(C = seq(0.2,3,0.2)), res = T, outfile="Binary_svmLineartuned.txt") # Best C = 1.6
+# Default RBF SVM
+Binary_svmRadial <- mlmodel(train = datatrain[-c(21,22)], model="svmRadial", res = T, outfile="Binary_svmRadial.txt") # Best C = 0.5
+# RBF SVM manually tuned
+Binary_svmRadialtuned <- mlmodel(train = datatrain[-c(21,22)], model="svmRadial", tunegrid=expand.grid(sigma = seq(0.05,0.12,0.01), C = seq(0.2,2,0.2)), res = T, outfile="Binary_svmRadialtuned.txt") # Best Sigma = 0.05 and C = 1.2
+```
+
+We observe that for the traditional IHC classification we get the following warning message: "In nominalTrainWorkflow(x = x, y = y, wts = weights, info = trainInfo,  : There were missing values in resampled performance measures." This is indirectly due to the small sample size (for some folds or some classes) that can result in a value of zero or NA for some metrics (e.g., precision, recall/specificity) further leading to missing values when computing other metrics such as the F1 score. This is one of the reasons for which we chose to use the balanced accuracy as the primary evaluation metric. This warning message will happen again when using RF and XGBoost.
+
+Now we can save all SVM models at once, creating first a list with all models:
+
+#svmmodels <- list(IHC_svmLinear=IHC_svmLinear, IHC_svmLineartuned=IHC_svmLineartuned, IHC_svmRadial=IHC_svmRadial, IHC_svmRadialtuned=IHC_svmRadialtuned, Ternary_svmLinear=Ternary_svmLinear, Ternary_svmLineartuned=Ternary_svmLineartuned, Ternary_svmRadial=Ternary_svmRadial, Ternary_svmRadialtuned=Ternary_svmRadialtuned, Binary_svmLinear=Binary_svmLinear, Binary_svmLineartuned=Binary_svmLineartuned, Binary_svmRadial=Binary_svmRadial, Binary_svmRadialtuned=Binary_svmRadialtuned)
+
+#save(svmmodels, file = "svmmodels.rda")
+
+<br>
+
+### RANDOM FOREST MODELS
+
+We will keep going with RF. This algorithm has only one hyperparameter to be tuned, *mtry*. As with SVM we start with default tuning, and, based on the results, the search grid is refined (manual tuning).
+
+```{r, eval=FALSE}
+## Traditional IHC classification
+
+# Default RF
+IHC_rf <- mlmodel(train = datatrain[-c(22,23)], model="rf", res = T, outfile="IHC_rf.txt") # Best mtry = 9
+# RF manually tuned
+IHC_rftuned <- mlmodel(train = datatrain[-c(22,23)], model="rf", tunegrid=expand.grid(mtry = seq(7,12)), res = T, outfile="IHC_rftuned.txt") # Best mtry = 10
+
+
+## Alternative ternary classification
+
+# Default RF
+Ternary_rf <- mlmodel(train = datatrain[-c(21,23)], model="rf", res = T, outfile="Ternary_rf.txt") # Best mtry = 16
+# RF manually tuned
+Ternary_rftuned <- mlmodel(train = datatrain[-c(21,23)], model="rf", tunegrid=expand.grid(mtry = seq(14,19)), res = T, outfile="Ternary_rftuned.txt") # Best mtry = 16
+
+
+## Alternative binary classification
+
+# Default RF
+Binary_rf <- mlmodel(train = datatrain[-c(21,22)], model="rf", res = T, outfile="Binary_rf.txt") # Best mtry = 16
+# RF manually tuned
+Binary_rftuned <- mlmodel(train = datatrain[-c(21,22)], model="rf", tunegrid=expand.grid(mtry = seq(14,19)), res = T, outfile="Binary_rftuned.txt") # Best mtry = 14
+```
+
+Again, we can save all RF models at once:
+
+#rfmodels <- list(IHC_rf=IHC_rf, IHC_rftuned=IHC_rftuned, Ternary_rf=Ternary_rf, Ternary_rftuned=Ternary_rftuned, Binary_rf=Binary_rf, Binary_rftuned=Binary_rftuned)
+
+#save(rfmodels, file = "rfmodels.rda")
+
+<br>
+
+### XGBOOST MODELS
+
+Things get complicated when training XGBoost models because with seven hyperparameters the number of tuning value combinations is exponential and quickly get unmanageable. To cope with this computational problem we chose to divide the tuning process in various steps jumping directly on the manual tuning.
+The functions *modelLookup("xgbTree")* and *getModelInfo("xgbTree")$xgbTree$grid* give us details on what represent each parameter and what can be their respective recommended range:
+
+```{r}
+# Getting information on parameter definition
+modelLookup("xgbTree")
+# Getting information on parameter range of values
+getModelInfo("xgbTree")$xgbTree$grid
+```
+
+The suggested/recommended ranges are those:
+
+#nrounds = floor((1:len) * 50) AND sample(1:1000, size = len, replace = TRUE)
+
+#max_depth = seq(1, len) AND sample(1:10, replace = TRUE, size = len)
+
+#eta = c(0.3, 0.4) AND runif(len, min = 0.001, max = 0.6)
+
+#gamma = 0 AND runif(len, min = 0, max = 10)
+
+#colsample_bytree = c(0.6, 0.8) AND runif(len, min = 0.3, max = 0.7)
+
+#min_child_weight = c(1) AND sample(0:20, size = len, replace = TRUE)
+
+#subsample = seq(0.5, 1, length = len) AND runif(len, min = 0.25, max = 1)
+
+
+Furthermore, the web page dedicated to XGBoost (https://xgboost.readthedocs.io/en/stable/parameter.html#), this explanatory web page (https://medium.com/%40nasa.sakib48/understanding-xgboost-parameters-in-depth-d8b58215f840), as well as this XGBoost tuning tutorial (https://www.kaggle.com/code/pelkoja/visual-xgboost-tuning-with-caret/report#step-1-number-of-iterations-and-the-learning-rate) can be of help.
+
+We start by tuning the number of boosting rounds *nrounds*, the learning rate *eta*, and also the maximum tree depth *max_depth* altogether, that represent the core structure of the model. Indeed, both *eta* and *max_depth* impact *nrounds* significantly (especially *eta*): the learning rate directly impacts the number of boosting rounds (greater *eta* implies less *nrounds* needed) because the higher the learning rate the less weighted are the pseudo-residuals, thus minimizing the loss function more quickly; the maximum tree depth directly impacts the number of boosting rounds as well (greater *max_depth* implies less *nrounds* needed) since more depth generally results in predictions closer to the observed values (the pseudo-residuals are smaller), therefore minimizing the loss more quickly as well; *eta* and *max_depth* indirectly interact with each other through *nrounds*.
+We limit *nrounds* to c(50, 100, 150), to begin with, as (i) large values result in high computing time and (ii) our dataset is relatively small-moderate in size (469 samples for 20 features) and higher values could cause overfitting; in any case this parameter will be re-tuned at the end. We limit *max_depth* to 2-5 because higher values could similarly cause overfitting; it can be refined during the next step. For *eta*, we can try a larger range (with few values) as this parameter will be re-tuned at the very end; it can be refined during the next step as well. These three parameters are tuned first so that a good model structure (learning dynamic) is found, which is necessary for further regularization.
+By default, *gamma* is left to 0 (no minimum loss reduction), *min_child_weight* to 1 (minimum sum of instance weight is set to minimal), and both *colsample_bytree* and *subsample* to 1 as well (no sampling is done, all rows and all features are kept).
+
+The second step is to tune *min_child_weight*, a structural regularization parameter, for which we can use a range of small values (1 to 3) since overfitting should already be controlled to some extent; this parameter can be checked again (its value verfiied) during the next step if necessary. At the same time we refine *eta* and *max_depth*.
+
+The third step is to tune *colsample_bytree* and *subsample*, and we can cover their respective suggested full range (more or less) as they are small ranges already. We also refine *min_child_weight* in parallel.
+
+The fourth step is to tune *gamma*, which is a terminal structural regularization parameter. At this step the model should already be quite finely tuned and overfitting controlled. Using high values could oppositely results in underfitting (bias). We thus limit the values to the 0-1 range.
+
+The fifth and last step is to retune both *nrounds* and *eta* to  this time testing with greater values of *nrounds* and smaller values of *eta*. Indeed, with the regularization the optimal learning dynamic might have shift and it is worth ensuring to have it optimized.
+
+Only the models corresponding to the two last steps are saved so that we can then explore if the re-tuning of *nrounds* and *eta* was really necessary compared to the final tuned model.
+
+For the traditional IHC classification:
+
+```{r, eval=FALSE}
+# First step
+mlmodel(train = datatrain[-c(22,23)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = c(50,100,150),
+  eta = c(0.05, 0.2, 0.6),
+  max_depth = c(2:5),
+  gamma = 0,
+  colsample_bytree = 1,
+  min_child_weight = 1,
+  subsample = 1))
+# Best hyperparameter results 
+# nrounds max_depth eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#     100         4 0.2     0                1                1         1              0.6678991               0.03731472
+
+# Second step
+mlmodel(train = datatrain[-c(22,23)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = 100,
+  eta = c(0.1, 0.2, 0.3),
+  max_depth = c(3:5),
+  gamma = 0,
+  colsample_bytree = 1,
+  min_child_weight = c(1:3),
+  subsample = 1))
+# Best hyperparameter results 
+# nrounds max_depth eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#     100         4 0.2     0                1                3         1              0.6694014               0.02964162
+
+# Third step
+mlmodel(train = datatrain[-c(22,23)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = 100,
+  eta = 0.2,
+  max_depth = 4,
+  gamma = 0,
+  colsample_bytree = seq(0.4, 1, 0.2),
+  min_child_weight = c(2:4),
+  subsample = c(0.5,seq(0.6,1,0.2))))
+# Best hyperparameter results 
+# nrounds max_depth eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#     100         4 0.2     0              0.6                3       0.6               0.6761267              0.03615857
+
+# Fourth step
+IHC_xgboosttuned <- mlmodel(train = datatrain[-c(22,23)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = 100,
+  eta = 0.2,
+  max_depth = 4,
+  gamma = c(0, 0.1, seq(0.2,1,0.2)),
+  colsample_bytree = 0.6,
+  min_child_weight = 3,
+  subsample = 0.6), res = T, outfile = "IHC_xgboosttuned.txt")
+# Best hyperparameter results 
+# nrounds max_depth eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#     100         4 0.2     1              0.6                3       0.6              0.6765289               0.03642704
+
+# Fifth step
+IHC_xgboosttuned2 <- mlmodel(train = datatrain[-c(22,23)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = c(50, 100, 300, 500),
+  eta = c(0.001,0.005,0.01,0.05,0.1,0.2),
+  max_depth = 4,
+  gamma = 1,
+  colsample_bytree = 0.6,
+  min_child_weight = 3,
+  subsample = 0.6), res = T, outfile = "IHC_xgboosttuned2.txt")
+# Best hyperparameter results 
+# nrounds max_depth eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#     100         4 0.1     1              0.6                3       0.6              0.6751369                0.0304425
+```
+
+For the alternative ternary classification:
+
+```{r, eval=FALSE}
+# First step
+mlmodel(train = datatrain[-c(21,23)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = c(50,100,150),
+  eta = c(0.05, 0.2, 0.6),
+  max_depth = c(2:5),
+  gamma = 0,
+  colsample_bytree = 1,
+  min_child_weight = 1,
+  subsample = 1))
+# Best hyperparameter results 
+# nrounds max_depth  eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#      50         2 0.05     0                1                1         1              0.9959512              0.009795813
+
+# Second step
+mlmodel(train = datatrain[-c(21,23)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = 50,
+  eta = c(0.001, 0.005, 0.01, 0.05),
+  max_depth = c(1:3),
+  gamma = 0,
+  colsample_bytree = 1,
+  min_child_weight = c(1:3),
+  subsample = 1))
+# Best hyperparameter results 
+# nrounds max_depth  eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#      50         1 0.001   0                1                1         1              0.9959512              0.009795813
+
+# Third step
+mlmodel(train = datatrain[-c(21,23)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = 50,
+  eta = 0.001,
+  max_depth = 1,
+  gamma = 0,
+  colsample_bytree = seq(0.4, 1, 0.2),
+  min_child_weight = 1,
+  subsample = c(0.5,seq(0.6,1,0.2))))
+# Best hyperparameter results 
+# nrounds max_depth  eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#      50         1 0.001   0               0.6                1         1              0.9959512              0.009795813
+
+# Fourth step
+Ternary_xgboosttuned <- mlmodel(train = datatrain[-c(21,23)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = 50,
+  eta = 0.001,
+  max_depth = 1,
+  gamma = c(0, 0.1, seq(0.2,1,0.2)),
+  colsample_bytree = 0.6,
+  min_child_weight = 1,
+  subsample = 1), res = T, outfile = "Ternary_xgboosttuned.txt")
+# Best hyperparameter results 
+# nrounds max_depth  eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#     50         1 0.001     0              0.6                1         1              0.9959512              0.009795813
+
+# Fifth step
+Ternary_xgboosttuned2 <- mlmodel(train = datatrain[-c(21,23)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = c(50, 100, 300, 500),
+  eta = c(0.001,0.005,0.01,0.05,0.1,0.2),
+  max_depth = 1,
+  gamma = 0,
+  colsample_bytree = 0.6,
+  min_child_weight = 1,
+  subsample = 1), res = T, outfile = "Ternary_xgboosttuned2.txt")
+# Best hyperparameter results 
+# nrounds max_depth eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#    50         1 0.001     0              0.6                1         1              0.9959512              0.009795813
+```
+
+For the alternative binary classification:
+
+```{r, eval=FALSE}
+# First step
+mlmodel(train = datatrain[-c(21,22)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = c(50,100,150),
+  eta = c(0.05, 0.2, 0.6),
+  max_depth = c(2:5),
+  gamma = 0,
+  colsample_bytree = 1,
+  min_child_weight = 1,
+  subsample = 1))
+# Best hyperparameter results 
+# nrounds max_depth  eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#      50         2 0.05     0                1                1         1                      1                        0
+
+# Second step
+mlmodel(train = datatrain[-c(21,22)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = 50,
+  eta = c(0.001, 0.005, 0.01, 0.05),
+  max_depth = c(1:3),
+  gamma = 0,
+  colsample_bytree = 1,
+  min_child_weight = c(1:3),
+  subsample = 1))
+# Best hyperparameter results 
+# nrounds max_depth  eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#      50         1 0.001   0                1                1         1                       1                        0
+
+# Third step
+mlmodel(train = datatrain[-c(21,22)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = 50,
+  eta = 0.001,
+  max_depth = 1,
+  gamma = 0,
+  colsample_bytree = seq(0.4, 1, 0.2),
+  min_child_weight = 1,
+  subsample = c(0.5,seq(0.6,1,0.2))))
+# Best hyperparameter results 
+# nrounds max_depth  eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#      50         1 0.001   0               0.6                1       0.6                      1                        0
+
+# Fourth step
+Binary_xgboosttuned <- mlmodel(train = datatrain[-c(21,22)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = 50,
+  eta = 0.001,
+  max_depth = 1,
+  gamma = c(0, 0.1, seq(0.2,1,0.2)),
+  colsample_bytree = 0.6,
+  min_child_weight = 1,
+  subsample = 0.6), res = T, outfile = "Binary_xgboosttuned.txt")
+# Best hyperparameter results 
+# nrounds max_depth  eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#      50         1 0.001    0              0.6                1       0.6                      1                        0
+
+# Fifth step
+Binary_xgboosttuned2 <- mlmodel(train = datatrain[-c(21,22)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = c(50, 100, 300, 500),
+  eta = c(0.001,0.005,0.01,0.05,0.1,0.2),
+  max_depth = 1,
+  gamma = 0,
+  colsample_bytree = 0.6,
+  min_child_weight = 1,
+  subsample = 0.6), res = T, outfile = "Binary_xgboosttuned2.txt")
+# Best hyperparameter results 
+# nrounds max_depth eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#     50         1 0.001    0              0.6                1       0.6                      1                        0
+```
+
+Once more, we can save all XGBoost models at once:
+
+#xgboostmodels <- list(IHC_xgboosttuned=IHC_xgboosttuned, IHC_xgboosttuned2=IHC_xgboosttuned2, Ternary_xgboosttuned=Ternary_xgboosttuned, Ternary_xgboosttuned2=Ternary_xgboosttuned2, Binary_xgboosttuned=Binary_xgboosttuned, Binary_xgboosttuned2=Binary_xgboosttuned2)
+
+#save(xgboostmodels, file = "xgboostmodels.rda")
+
+<br>
+
+### COMPARISONS AMONG SIMILAR-TYPED MODELS
+
+We now need to know which of the SVM model performs best (linear vs RBF and default tuning vs. refined manual tuning). The same applies for the RF models (default tuning vs. refined manual tuning), as well as the XGBoost models, as previously explained (final tuned model vs. final model with *nrounds* and *eta* refined again).
+
+We can load the three list of models previously saved:
+
+```{r}
+# Loading the supervised ML models
+for (i in list.files(getwd(), pattern = "models.rda")){
+  load(file = i)
+}
+```
+
+A custom function called *compMLmodels()* was devised for comparing the three types of model (algorithm) separately, depending on the classification, using the balanced accuracy (averaged across folds) as evaluation metric and showing this metric summary statistics and confidence interval for each model. Also, a Bonferroni-corrected paired Student's t test is computed, comparing resamples for each possible pair of models.
+
+We apply this function to each model list separately:
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+## Comparing the ML models
+# SVM models
+compMLmodels(svmmodels)
+# RF models
+compMLmodels(rfmodels)
+# XGBoost models
+compMLmodels(xgboostmodels)
+```
+
+The best performing SVM models are: IHC_svmLineartuned (highest median, mean and CI, although no significantly different from base linear), Ternary_svmLineartuned (highest median, mean and CI almost identical to those of base linear, although no significantly different from base linear), and Binary_svmLineartuned (highest median, mean and CI, although no significantly different from base linear).
+
+The best performing RF models are: IHC_rf (highest median, mean and CI almost identical to those of the tuned one, although no significantly different from the tuned one), Ternary_rf (exact same than the tuned one so we can keep the default), and Binary_rf (not the exact same than the tuned one but similar results regarding balanced accuracy so we keep the default).
+
+The best performing XGBoost models are: IHC_xgboosttuned (highest median, mean and CI, although no significantly different from the re-tuned one), Ternary_xgboosttuned (exact same than the re-tuned one so we keep the simplest), and Binary_xgboosttuned (exact same than the re-tuned one so we keep the simplest).
+
+Now that the best performing (best tuned) models have been sorted out we can create a unique list with those models (CV results) and save it:
+
+```{r, eval=FALSE}
+## New list with the kept models only
+# SVM models
+modelsML <- svmmodels[c("IHC_svmLineartuned", "Ternary_svmLineartuned", "Binary_svmLineartuned")]
+# RF models
+modelsML <- append(modelsML, rfmodels[c("IHC_rf", "Ternary_rf", "Binary_rf")])
+# XGBOOST models
+modelsML <- append(modelsML, xgboostmodels[c("IHC_xgboosttuned", "Ternary_xgboosttuned", "Binary_xgboosttuned")])
+
+# Saving this list
+#save(modelsML, file = "modelsML.rda")
+```
+
+<br>
+
+### APPLICATION OF THE SELECTED ML MODELS TO THE TEST DATASET
+
+It is time to use the model on the test set. To do that, we first retrain the selected models on the full training set without using CV nor oversampling since at this step the models are meant to be representative of the original data, with the true frequencies of the classes, etc. Then, such retrained models are applied to the test set to obtain the test results. A list is generated. This list, for each selected model, compiles the retrained model and the test results and associated ROC curves. We also print the full results in distinct files as we did previously when training models with CV.
+
+We first set the new parameters for *trainControl()*:
+
+```{r, eval=FALSE}
+# Setting of the parameters for final evaluation (on test set)
+controltrain <- trainControl(method="none", classProbs = T, summaryFunction = multiClassSummary, savePredictions = "final")
+```
+
+Now we compute the results. As mentionned before, these are also saved into separate text files (the specific name of each file is iteratively created and specified after the argument 'outfile=' when using the *mlmodel()* function):
+
+```{r, eval=FALSE}
+# Generating test results
+evaluationML <- lapply(names(modelsML), function(model){
+  
+  # Choosing the correct model type
+  modeltype <- case_when(
+  grepl("_svmLinear", model) ~ "svmLinear",
+  grepl("_rf", model) ~ "rf",
+  grepl("_xgboost", model) ~ "xgbTree",
+  TRUE ~ NA_character_)
+  
+  # Choosing the correct classification along with the predictors
+  if(grepl("IHC", model)){
+    training <- datatrain[-c(22,23)]
+  }
+  else if(grepl("Ternary", model)){
+    training <- datatrain[-c(21,23)]
+  }
+  else if(grepl("Binary", model)){
+    training <- datatrain[-c(21,22)]
+  }
+  
+  # Applying the function *mlmodel()*
+  mlmodel(train=training, test=testdata, model=modeltype, tunegrid=modelsML[[model]]$cvmodel$bestTune, outfile=paste0("test_res_",model,".txt"))
+  
+})
+names(evaluationML) <- names(modelsML) # Giving the test results in the list the names corresponding to their respective training model
+```
+
+We finally save the list:
+
+#save(evaluationML, file = "evaluationML.rda")
+
+<br>
+
+### CV RESULTS, TEST RESULTS, AND ROC CURVE PLOTS
+
+The CV and test results (confusion matrices and statistics, as well as macro-metrics) can be found in the *ML_models_results_CV&test.xlsx* document.
+In general, the results are extremely similar between the CV results and test results and vary the most for SVM, in particular in the case of the traditional IHC classification. RF and XGBoost perform very similarly. In general, the models perform the worst for the traditional IHC classification (e.g., Kappa ~0.35–0.52, Balanced Accuracy ~0.65–0.70, AUC ~0.74–0.78), while the performances are very high (and even maximal) and highly similar in the two alternative classifications (e.g., Kappa ~0.88–1, Balanced Accuracy ~0.93–1, AUC ~0.99–1, the values being most generally close to 1).
+
+If we had to order these models by overall performance the order would be the following (for each classification):
+
+IHC_RF ≈ IHC_XGBoost < IHC_SVM.
+
+Ternary_SVM < Ternary_RF = Ternary_XGBoost (the former very slightly better for AUC).
+
+Binary~SVM < Binary_RF = Binary_XGBoost. 
+
+In definitive, the traditional IHC classification seems the least "reliable" while the alternative binary one is perhaps the most but not significantly more than the alternative ternary one.
+
+Let's now take a look at the ROC curves. We can directly load the two lists previously created, containing the CV results and test results, respectively:
+
+```{r}
+# Loading the list with the selected ML model CV results as well as the list with the test results
+load(file = "modelsML.rda")
+load(file = "evaluationML.rda")
+```
+
+We create plots showing both the CV ROC curves and test ROC curves in single panels:
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+## Loop for generating double plots of CV training ROC curves and test ROC curves from the two previous lists
+
+for(model in names(modelsML)){
+  
+  # Choosing the correct model type 
+  modeltype <- case_when(
+  grepl("_svmLinear", model) ~ "SVM",
+  grepl("_rf", model) ~ "RF",
+  grepl("_xgboost", model) ~ "XGBOOST",
+  TRUE ~ NA_character_)
+  
+  # Choosing the correct classification
+  if(grepl("IHC", model)){
+    classif <- colnames(datatrain)[21]
+  }
+  else if(grepl("Ternary", model)){
+    classif <- colnames(datatrain)[22]
+  }
+  else if(grepl("Binary", model)){
+    classif <- colnames(datatrain)[23]
+  }
+  
+  # Extracting the two ROC plots
+  p1 <- modelsML[[model]]$cvrocplot
+  p2 <- evaluationML[[model]]$testrocplot
+  
+  # Extracting the two (macro) AUC values from the two original plot titles
+  aucp1 <- sub(".*(Macro.*)", "\\1", p1$labels$title)
+  aucp2 <- sub(".*(Macro.*)", "\\1", p2$labels$title)
+  
+  legend <- get_legend(p1 + theme(legend.position = "bottom")) # Common legend for the final figure
+  
+  # Modifying the individual plots
+  p1 <- p1 + labs(title = paste("CV train —", aucp1, "\n")) + theme(legend.position = "none")
+  p2 <- p2 + labs(title = paste("Test —", aucp2, "\n")) + theme(legend.position = "none")
+
+  # Grid with all the plots
+  grid <- plot_grid(plotlist=list(p1, p2), ncol = 2)
+  # Common title
+  title <- ggdraw() + draw_label(paste0("ROC curves for classification ", classif, " with ", modeltype), fontface='bold', size=15)
+  # Final figure
+  fig <- plot_grid(title, grid, ncol=1, nrow = 2, rel_heights=c(0.1, 1))
+  print(plot_grid(fig, legend, ncol=1, nrow = 2, rel_heights = c(1, 0.1)))
+}
+```
+
+We observe that for the IHC classification, observations belonging to the "10-50%" category ("ModPos" here) are correctly classified with only 50% probability. The probability of correct classification for the "1-9%" category ("LowPos" here) is better but not very high either, for RF and XGBoost (it is for SVM). For the two remaining categories the probability of correct classification becomes quite high generally quickly, especially for the ER-negative category ("<1%"). For the ROC curves specifically, SVM performs somehow better (but not for the other metrics). For the two alternative classifications, the probability of correct classification is always close or equal to 1 for all categories, in all models. But the RF model is always slightly better.
+
+<br>
+
+### SHAP VALUES COMPUTATION AND ASSOCIATED PLOTS
+
+Based on the retrained ML models, i.e., the models that were retained on the full training set, we can now compute SHAP values and producing a feature importance plot for each class of each classification. The custom function *plotshap()* was developed for that purpose. It computes and returns the matrices of mean SHAP values (both raw and absolute), the per-class plots, and a plot grid with all plots together. Because computing SHAP values can take long and is not straightforward when it comes to SVM models, we use the SHAP approximation framework of the **fastshap** package, through the function *explain()*. To have more accurate results, we use 500 Monte-Carlo simulations and the option for adjusting the SHAP values, which adjusts the sum of the estimated SHAP values to satisfy the local accuracy property.
+
+This function is applied to each type of model and classification, separately, and the resulting objects can be saved once again in a unique list:
+
+```{r, eval=FALSE}
+# For the SVM models
+IHC_SVM_SHAP <- plotshap(evaluationML[1], shap = T)
+Ternary_SVM_SHAP <- plotshap(evaluationML[2], shap = T)
+Binary_SVM_SHAP <- plotshap(evaluationML[3], shap = T)
+
+# For the RF models
+IHC_RF_SHAP <- plotshap(evaluationML[4], shap = T)
+Ternary_RF_SHAP <- plotshap(evaluationML[5], shap = T)
+Binary_RF_SHAP <- plotshap(evaluationML[6], shap = T)
+
+# For the XGBoost models
+IHC_XGBoost_SHAP <- plotshap(evaluationML[7], shap = T)
+Ternary_XGBoost_SHAP <- plotshap(evaluationML[8], shap = T)
+Binary_XGBoost_SHAP <- plotshap(evaluationML[9], shap = T)
+
+
+# List will all SHAP results
+fullplotshap <- list(IHC_SVM_SHAP=IHC_SVM_SHAP, Ternary_SVM_SHAP=Ternary_SVM_SHAP, Binary_SVM_SHAP=Binary_SVM_SHAP, IHC_RF_SHAP=IHC_RF_SHAP, Ternary_RF_SHAP=Ternary_RF_SHAP, Binary_RF_SHAP=Binary_RF_SHAP, IHC_XGBoost_SHAP=IHC_XGBoost_SHAP, Ternary_XGBoost_SHAP=Ternary_XGBoost_SHAP, Binary_XGBoost_SHAP=Binary_XGBoost_SHAP)
+
+# Saving these objects in a unique list
+#save(fullplotshap, file="fullplotshap.rda")
+```
+
+Now we can directly load this list and show the nine final plot grids:
+
+```{r, fig.height=7, fig.width=10, out.width="100%"}
+# Loading the list of feature importance plots
+load(file="fullplotshap.rda")
+
+# Showing the plots
+for(model in fullplotshap){
+  print(model$final_plot)
+}
+```
+
+First of all, we observe that ESR1 expression ("counts") is always the most important feature and shows a relatively much higher mean SHAP value than the other features. This is especially true for the alternative classifications and when the algorithm employed is RF or XGBoost (most marked for XGBoost). The only exception is for the "10-50%" category ("ModPos" here) of the traditional IHC classification for which ESR1 expression is the third most important feature (but its SHAP value is not very different than those of the two most important features).
+
+Now we can check what are the most important features across all classes, averaging the per-class SHAP values for each model type, for each classification. Plots of the 10 most influent (important) features can be produced as well:
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+## List containing, for each classification and each model type, the mean absolute SHAP values averaged across all classes
+avgclassshap <- lapply(c("IHC", "Ternary", "Binary"), function(classif){
+  # Creating an internal list with the models corresponding to one classification only
+  listmodels <- fullplotshap[grep(classif, names(fullplotshap))]
+  # Calculating the averages across all classes 
+  listclassavg <- lapply(listmodels, function(model){
+    rowMeans(model$magn_shap_values)
+  })
+})
+names(avgclassshap) <- c("IHC", "Ternary", "Binary")
+
+
+## Plots of the 10 most important features for each model type for each classification
+for(classif in names(avgclassshap)){ # List of plots
+  
+  # Choosing the correct classification
+  if(grepl("IHC", classif)){
+    nameclassif <- colnames(datatrain)[21]
+  }
+  else if(grepl("Ternary", classif)){
+    nameclassif <- colnames(datatrain)[22]
+  }
+  else if(grepl("Binary", classif)){
+    nameclassif <- colnames(datatrain)[23]
+  }
+  
+  # List of plots (one for each model type)
+  plotlist <- lapply(names(avgclassshap[[classif]]), function(model){
+    
+    # Choosing the correct type of model
+    modeltype <- case_when(
+    grepl("SVM", model) ~ "SVM",
+    grepl("RF", model) ~ "RF",
+    grepl("XGBoost", model) ~ "XGBOOST",
+    TRUE ~ NA_character_)
+    
+    df <- data.frame(immunvar=names(avgclassshap[[classif]][[model]]), shap=avgclassshap[[classif]][[model]], row.names = NULL)
+    df <- df[order(df$shap, decreasing = T),] # Important to reorder the values from most to least important so that the 10 first can then be selected
+    
+    ggplot(df[1:10,], aes(x = shap, y = reorder(immunvar, shap))) +
+      geom_col(fill = "steelblue") + 
+      labs(x = "Mean SHAP value \n", y = NULL, title = modeltype) +
+      theme_gray() +
+      theme(panel.grid.major.x = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(color = "black"), plot.title = element_text(face = "bold", hjust = 0.5))
+  })
+  names(plotlist) <- names(classif)
+  
+# Grid with all the plots
+grid <- plot_grid(plotlist=plotlist, ncol = 2)
+# Common title
+title <- ggdraw() + draw_label(paste("Feature importance for classification", nameclassif), fontface='bold', size=15)
+# Final figure
+print(plot_grid(title, grid, ncol=1, nrow = 2, rel_heights=c(0.1, 1)))
+}
+```
+
+We can also check what are the most important features across all model types, that-is-to-say, the most important features for each classification, averaging across model types. For that purpose we need to first normalize (using sum normalization) the class-average SHAP values of each model type within each classification, and then compute the averages across all model types (for each classification):
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+## List containing, for each classification, the overall mean absolute SHAP values (averaged across all model types)
+overallshap <- lapply(avgclassshap, function(classif){
+  # Applying sum normalization to the SHAP values of each model type
+  listmodelavg <- lapply(classif, function(mod){
+    mod/sum(mod)
+  })
+  # Averaging the normalized SHAP values across all model types
+  rowMeans(as.data.frame(listmodelavg))
+})
+names(overallshap) <- c("IHC", "Ternary", "Binary")
+# Converting the list to table
+(overallshap <- as.data.frame(overallshap))
+
+
+## Plots of the 10 most important features for ach classification
+overallshapplot <- lapply(colnames(overallshap), function(classif){ # List of plots
+    
+    df <- data.frame(immunvar=rownames(overallshap), shap=overallshap[,classif], row.names = NULL)
+    df <- df[order(df$shap, decreasing = T),]
+    
+    ggplot(df[1:10,], aes(x = shap, y = reorder(immunvar, shap))) +
+      geom_col(fill = "tomato") + 
+      labs(x = "Mean SHAP value \n", y = NULL, title = classif) +
+      theme_gray() +
+      theme(panel.grid.major.x = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(color = "black"), plot.title = element_text(face = "bold", hjust = 0.5))
+    })
+names(overallshapplot) <- colnames(overallshap)
+
+# Grid with all the plots
+grid <- plot_grid(plotlist=overallshapplot, ncol = 3)
+# Common title
+title <- ggdraw() + draw_label("Feature importance by classification", fontface='bold', size=15)
+# Final figure
+plot_grid(title, grid, ncol=1, nrow = 2, rel_heights=c(0.1, 1))
+```
+
+Based on these values we can generate a heatmap correlating the three classifications and the 20 immunological features:
+
+```{r, fig.height=8, fig.width=10, out.width="100%"}
+# Defining a color gradient
+heatcol <- colorRampPalette(RColorBrewer::brewer.pal(9,"YlOrRd"))(50)
+# Heatmap
+pheatmap::pheatmap(overallshap, border_color=NA, fontsize_col=13, angle_col=45, color = heatcol)
+```
+
+Until now we have explored the mean absolute SHAP values at different levels (per class, per model, per classification). These represented the magnitude of the feature effects, i.e., the importance (or influence). But the direction of the effect is also worth exploring. The direction is given by the (mean) raw SHAP values. So now we will directly compute the overall mean raw SHAP values for each classification, by applying the same steps of averaging and normalization previously employed for exploring the magnitude. In that case the sum used in the normalization is not the sum of the mean raw SHAP values but the sum of the mean absolute SHAP values!
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+## List containing, for each classification, the overall mean raw SHAP values
+overallshap_dir <- lapply(c("IHC", "Ternary", "Binary"), function(classif){
+  # Creating an internal list with the models corresponding to one classification only
+  listmodels <- fullplotshap[grep(classif, names(fullplotshap))]
+  # Calculating the averages across all classes 
+  listclassavg <- lapply(listmodels, function(model){
+    list(absavgclass=rowMeans(model$magn_shap_values),
+         avgclassshap=rowMeans(model$dir_shap_values))
+  })
+  # Applying sum normalization for each model type
+  listmodelavg <- lapply(listclassavg, function(mod){
+    mod$avgclassshap/sum(mod$absavgclass)
+  })
+  # Averaging the normalized SHAP values across all model types
+  rowMeans(as.data.frame(listmodelavg))
+})
+names(overallshap_dir) <- c("IHC", "Ternary", "Binary")
+# Converting the list to table
+(overallshap_dir <- as.data.frame(overallshap_dir))
+```
+
+Since having applied successive steps of averaging and normalization to the mean raw SHAP values ultimately distorts the true information on the magnitude (it is the mean absolute SHAP value that truly represents the importance/influence) we need to mix the two types of values (overall mean raw and absolute SHAP values). We can therefore compute a compound plot showing the direction of the effect of the 10 most important features (for each classification) and using a color gradient to express the (true) magnitude of the effect.
+
+```{r, fig.height=8, fig.width=10, out.width="100%"}
+## Plots of the 10 most important features for ach classification
+overallshapplot_dir <- lapply(colnames(overallshap_dir), function(classif){ # List of plots
+  
+  ordinfl <- order(overallshap[,classif], decreasing = T) # Ordered vector containing the names of the features from most to least important
+  df <- data.frame(immunvar=rownames(overallshap_dir), shap=overallshap_dir[,classif], row.names = NULL)
+  df <- df[ordinfl[1:10],] # Selecting the raw SHAP values (direction of the effect) corresponding to the 10 most important features
+  df$immunvar <- factor(df$immunvar, levels = rev(rownames(overallshap)[ordinfl[1:10]]))
+  
+  colpal <- rev(colorRampPalette(RColorBrewer::brewer.pal(11,"RdYlBu"))(50)) # Gradient of colors
+
+  ggplot(df, aes(x = shap, y = immunvar)) +
+    geom_col(aes(fill = overallshap[ordinfl,classif][1:10])) + # Using the absolute SHAP values (magnitude) of the 10 most important features to fill the bars with colors
+    scale_fill_gradientn(colours = colpal) + # Mapping the color gradient to these 10 specific values in order to have nice gradient colors
+    labs(x = "Mean SHAP value \n", y = NULL, title = classif, fill = "Magnitude") +
+    scale_x_continuous(labels = function(x) sprintf("%.e", x)) +
+    theme_gray() +
+    theme(panel.grid.major.x = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(color = "black"), plot.title = element_text(face = "bold", hjust = 0.5), legend.position = "bottom", legend.title.position = "top")
+    })
+names(overallshapplot_dir) <- colnames(overallshap_dir)
+  
+# Grid with all the plots
+grid <- plot_grid(plotlist=overallshapplot_dir, ncol = 3)
+# Common title
+title <- ggdraw() + draw_label("Feature magnitude and direction of effect by classification", fontface='bold', size=15)
+# Final figure
+plot_grid(title, grid, ncol=1, nrow = 2, rel_heights=c(0.1, 1))
+```
+
+Finally, we can compute a final figure, a balloon plot integrating the direction and magnitude of the 5 most important features for the three classifications. This time the idea is to show the 5 features systematically appearing among the most important in each classification. To do that we can simply average the overall mean absolute SHAP values across the three classifications and extract the names of the five most important (the five with the highest magnitude) and use these 5 features in the plot.
+
+In this plot, the size of the circles will represent the magnitudes and the colors will represent the directions.
+
+```{r, fig.height=8, fig.width=10, out.width="100%"}
+## Balloonplot of the five most important features among thre three classifications, showing both the magnitude and direction of the effects
+
+# Names of the features ordered from the most to least important across the three classifications
+ordinfl_all <- names(sort(rowMeans(overallshap), decreasing = T))
+
+# Table of the overall mean absolute SHAP values (for each classification) ordered from the most to least important across the three classifications
+bestshap <- overallshap[ordinfl_all,]
+bestshap <- data.frame(cells = rownames(bestshap), bestshap)
+# Same table but in long format
+bestshaplong <- reshape2::melt(bestshap, id.vars = "cells")
+# Selecting only the values corresponding to the five most important features
+balloonshap <- subset(bestshaplong, cells==ordinfl_all[1:5])
+
+# Gradient of colors
+colpal <- rev(colorRampPalette(RColorBrewer::brewer.pal(11,"RdYlBu"))(50))
+
+# Table of the overall mean raw SHAP values (for each classification) for the five most important features from the most to least important across the three classifications (as just done with the overall mean absolute SHAP values)
+bestshap_dir <- overallshap_dir[ordinfl_all,]
+bestshap_dir <- data.frame(cells = rownames(bestshap_dir), bestshap_dir)
+bestshaplong_dir <- reshape2::melt(bestshap_dir, id.vars = "cells")
+balloonshap_dir <- subset(bestshaplong_dir, cells==ordinfl_all[1:5])
+
+# Defining the values and labels displayed in the legend of the color gradient 
+breaksp <- c(min(balloonshap_dir$value), mean(range(balloonshap_dir$value)), max(balloonshap_dir$value))
+labelsp <- sprintf("%.e", breaksp)
+
+# Final plot
+ggplot(balloonshap, aes(x = variable, y = reorder(cells, value))) + geom_point(aes(size=value, fill=balloonshap_dir$value),shape=21) + scale_size(range = range(balloonshap$value)*50) + scale_fill_gradientn(colours = colpal, breaks = breaksp, labels = labelsp) + labs(x = "", y = "", title = "Five most influential feature magnitude and direction of effect \n", size = "Magnitude \n", fill = "Direction \n") +
+  theme_gray() +
+  theme(panel.grid.minor = element_blank(), axis.line = element_line(color = "black"), axis.text = element_text(size = 12), axis.text.x = element_text(size = 15, face = "bold"), plot.title = element_text(size = 15, face = "bold", hjust = 0.5), legend.title = element_text(size = 12))
+```
+
+<br>
+
+### ML MODELS EXCLUDING IMMUNOLOGICAL FEATURES
+
+It can be interesting to check how the immunological features affect the classification performances.
+Let's train again the selected models (SVM linear manually tuned, RF with default tuning and XGBoost manually tuned, without retuning *nrounds* and *eta*), using ESR1 expression as the unique feature.
+
+We first reset properly the training parameters.
+
+```{r, eval=FALSE}
+# Setting of the control parameters for the trained model
+controltrain <- trainControl(method="repeatedcv", number=5, repeats = 10, sampling = "up", classProbs = T, summaryFunction = multiClassSummary, savePredictions = "final") # ClassProbs=T for saving prediction probabilites, savePredictions="final" for only saving those corresponding to the best model, summaryFunction=multiClassSummary for all metrics
+```
+
+
+```{r, eval=FALSE}
+## Traditional IHC classification
+
+# Linear SVM manually tuned
+IHC_ESR1_svmLineartuned <- mlmodel(train = datatrain[-c(1:19, 22,23)], model="svmLinear", tunegrid=expand.grid(C = seq(0.2,3,0.2)), res = T) # Best C = 1.2
+# Best hyperparameter results 
+#   C Mean_Balanced_Accuracy Mean_Balanced_AccuracySD       AUC      AUCSD
+# 1.2                0.66105               0.03155613 0.7887384 0.04604046
+
+
+## Alternative ternary classification
+
+# Linear SVM manually tuned
+Ternary_ESR1_svmLineartuned <- mlmodel(train = datatrain[-c(1:19, 21,23)], model="svmLinear", tunegrid=expand.grid(C = seq(0.2,3,0.2)), res = T) # Best C = 1.8
+# Best hyperparameter results 
+#   C Mean_Balanced_Accuracy Mean_Balanced_AccuracySD AUC AUCSD
+# 1.8              0.9969632              0.005382448   1     0
+
+
+## Alternative binary classification
+
+# Linear SVM manually tuned
+Binary_ESR1_svmLineartuned <- mlmodel(train = datatrain[-c(1:19, 21,22)], model="svmLinear", tunegrid=expand.grid(C = seq(0.2,3,0.2)), res = T) # Best C = 2.6
+# Best hyperparameter results 
+#   C Balanced_Accuracy Balanced_AccuracySD AUC AUCSD
+# 2.6         0.9984101         0.003212053   1     0
+```
+
+Now we run RF. Here, the default *mtry* is automatically fixed to 2 since there is only a single feature, but in reality only 1 is used.
+
+```{r, eval=FALSE}
+## Traditional IHC classification
+
+# Default RF
+IHC_ESR1_rf <- mlmodel(train = datatrain[-c(1:19, 22,23)], model="rf", res = T) # Best mtry = 2
+# Best hyperparameter results 
+# mtry Mean_Balanced_Accuracy Mean_Balanced_AccuracySD       AUC      AUCSD
+#    2              0.6436742               0.03032873 0.6410067 0.03414814
+
+
+## Alternative ternary classification
+
+# Default RF
+Ternary_ESR1_rf <- mlmodel(train = datatrain[-c(1:19, 21,23)], model="rf", res = T) # Best mtry = 2
+# Best hyperparameter results 
+# mtry Mean_Balanced_Accuracy Mean_Balanced_AccuracySD       AUC        AUCSD
+#    2              0.9959512              0.009795813 0.9999899 4.984026e-05
+
+
+## Alternative binary classification
+
+# Default RF
+Binary_ESR1_rf <- mlmodel(train = datatrain[-c(1:19, 21,22)], model="rf", res = T) # Best mtry = 2
+# Best hyperparameter results
+# mtry Balanced_Accuracy Balanced_AccuracySD AUC AUCSD
+#    2                 1                   0   1     0
+```
+
+
+We finally run XGBoost.
+
+For the traditional IHC classification:
+
+```{r, eval=FALSE}
+# First step
+mlmodel(train = datatrain[c(20,21)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = c(50,100,150),
+  eta = c(0.05, 0.2, 0.6),
+  max_depth = c(2:5),
+  gamma = 0,
+  colsample_bytree = 1,
+  min_child_weight = 1,
+  subsample = 1))
+# Best hyperparameter results 
+# nrounds max_depth eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#     100         5 0.2     0                1                1         1              0.6436975               0.03001912
+
+# Second step
+mlmodel(train = datatrain[c(20,21)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = 100,
+  eta = c(0.1, 0.2, 0.3),
+  max_depth = c(4:6),
+  gamma = 0,
+  colsample_bytree = 1,
+  min_child_weight = c(1:3),
+  subsample = 1))
+# Best hyperparameter results 
+#  nrounds max_depth eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#      100         6 0.3     0                1                3         1               0.645968               0.02811465
+
+# Third step
+mlmodel(train = datatrain[c(20,21)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = 100,
+  eta = 0.3,
+  max_depth = 6,
+  gamma = 0,
+  colsample_bytree = seq(0.4, 1, 0.2),
+  min_child_weight = c(2:4),
+  subsample = c(0.5,seq(0.6,1,0.2))))
+# Best hyperparameter results 
+# nrounds max_depth eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#     100         6 0.3     0                1                4       0.5               0.650541                0.0298948
+
+# Fourth step
+IHC_ESR1_xgboosttuned <- mlmodel(train = datatrain[c(20,21)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = 100,
+  eta = 0.3,
+  max_depth = 6,
+  gamma = c(0, 0.1, seq(0.2,1,0.2)),
+  colsample_bytree = 1,
+  min_child_weight = 4,
+  subsample = 0.5), res = T)
+# Best hyperparameter results 
+# nrounds max_depth eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#     100         6 0.3   0.2                1                4       0.5              0.6496457               0.03024881
+```
+
+For the alternative ternary classification:
+
+```{r, eval=FALSE}
+# First step
+mlmodel(train = datatrain[c(20,22)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = c(50,100,150),
+  eta = c(0.05, 0.2, 0.6),
+  max_depth = c(2:5),
+  gamma = 0,
+  colsample_bytree = 1,
+  min_child_weight = 1,
+  subsample = 1))
+# Best hyperparameter results 
+# nrounds max_depth  eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#      50         2 0.05     0                1                1         1              0.9959512              0.009795813
+
+# Second step
+mlmodel(train = datatrain[c(20,22)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = 50,
+  eta = c(0.001, 0.005, 0.01, 0.05),
+  max_depth = c(1:3),
+  gamma = 0,
+  colsample_bytree = 1,
+  min_child_weight = c(1:3),
+  subsample = 1))
+# Best hyperparameter results 
+# nrounds max_depth  eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#      50         1 0.001   0                1                1         1              0.9959512              0.009795813
+
+# Third step
+mlmodel(train = datatrain[c(20,22)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = 50,
+  eta = 0.001,
+  max_depth = 1,
+  gamma = 0,
+  colsample_bytree = seq(0.4, 1, 0.2),
+  min_child_weight = 1,
+  subsample = c(0.5,seq(0.6,1,0.2))))
+# Best hyperparameter results 
+# nrounds max_depth  eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#     50         1 0.001     0              0.6                1       0.6              0.9965203              0.008740941
+
+# Fourth step
+Ternary_ESR1_xgboosttuned <- mlmodel(train = datatrain[c(20,22)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = 50,
+  eta = 0.001,
+  max_depth = 1,
+  gamma = c(0, 0.1, seq(0.2,1,0.2)),
+  colsample_bytree = 0.6,
+  min_child_weight = 1,
+  subsample = 0.6), res = T)
+# Best hyperparameter results 
+# nrounds max_depth  eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#     50         1 0.001   0.1              0.6                1       0.6              0.9966914               0.00872326
+
+```
+
+For the alternative binary classification:
+
+```{r, eval=FALSE}
+# First step
+mlmodel(train = datatrain[c(20,23)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = c(50,100,150),
+  eta = c(0.05, 0.2, 0.6),
+  max_depth = c(2:5),
+  gamma = 0,
+  colsample_bytree = 1,
+  min_child_weight = 1,
+  subsample = 1))
+# Best hyperparameter results 
+# nrounds max_depth  eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#      50         2 0.05     0                1                1         1                      1                        0
+
+# Second step
+mlmodel(train = datatrain[c(20,23)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = 50,
+  eta = c(0.001, 0.005, 0.01, 0.05),
+  max_depth = c(1:3),
+  gamma = 0,
+  colsample_bytree = 1,
+  min_child_weight = c(1:3),
+  subsample = 1))
+# Best hyperparameter results 
+# nrounds max_depth  eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#      50         1 0.001   0                1                1         1                       1                        0
+
+# Third step
+mlmodel(train = datatrain[c(20,23)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = 50,
+  eta = 0.001,
+  max_depth = 1,
+  gamma = 0,
+  colsample_bytree = seq(0.4, 1, 0.2),
+  min_child_weight = 1,
+  subsample = c(0.5,seq(0.6,1,0.2))))
+# Best hyperparameter results 
+# nrounds max_depth  eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#      50         1 0.001   0               0.4                1       0.8                      1                        0
+
+# Fourth step
+Binary_ESR1_xgboosttuned <- mlmodel(train = datatrain[c(20,23)], model="xgbTree", tunegrid=expand.grid(
+  nrounds = 50,
+  eta = 0.001,
+  max_depth = 1,
+  gamma = c(0, 0.1, seq(0.2,1,0.2)),
+  colsample_bytree = 0.4,
+  min_child_weight = 1,
+  subsample = 0.8), res = T)
+# Best hyperparameter results 
+# nrounds max_depth  eta gamma colsample_bytree min_child_weight subsample Mean_Balanced_Accuracy Mean_Balanced_AccuracySD
+#      50         1 0.001    0              0.4                1       0.8                      1                        0
+```
+
+
+As we did before, we save those models as a single list.
+
+#modelsESR1 <- list(IHC_svmLineartuned=IHC_svmLineartuned, Ternary_svmLineartuned=Ternary_svmLineartuned, Binary_svmLineartuned=Binary_svmLineartuned, IHC_rf=IHC_rf, Ternary_rf=Ternary_rf, Binary_rf=Binary_rf, IHC_xgboosttuned=IHC_xgboosttuned, Ternary_xgboosttuned=Ternary_xgboosttuned, Binary_xgboosttuned=Binary_xgboosttuned)
+
+#save(modelsESR1, file="modelsESR1.rda")
+
+Now we can load this list directly:
+
+```{r}
+# Loading the ML models based on ESR1 only
+load(file="modelsESR1.rda")
+```
+
+We apply our custom function of comparison to compare the 9 original models with these 9 based on ESR1 only:
+
+```{r, fig.height=5, fig.width=10, out.width="100%"}
+# Comparing the original ML models with the ESR1-only ML models
+# SVM models
+compMLmodels(model1 = modelsML[grep("svm", names(modelsML))], model2 = modelsESR1[grep("svm", names(modelsML))])
+# RF models
+compMLmodels(model1 = modelsML[grep("rf", names(modelsML))], model2 = modelsESR1[grep("rf", names(modelsML))])
+# XGBoost models
+compMLmodels(model1 = modelsML[grep("xgboost", names(modelsML))], model2 = modelsESR1[grep("xgboost", names(modelsML))])
+```
+
+- Traditional IHC classification:
+SVM with immunological features performs significantly better than without (ESR1 only), the increase in balanced accuracy is 3.77%. Same for RF with an increase in balanced accuracy of 2.87%. Same for XGBOOST with an increase in balanced accuracy of 2.69%.
+
+- Alternative ternary classification:
+SVM with immunological features performs significantly WORSE than without (ESR1 only), the decrease in balanced accuracy is 2.33%. For RF the two models PERFORMS THE EXACT SAME. For XGBOOST the two models perform very slighly differently but DO NOT DIFFER SIGNIFICANTLY.
+
+- Alternative binary classification:
+SVM with immunological features performs significantly WORSE than without (ESR1 only), the decrease in balanced accuracy is 1.89%. For RF the two models PERFORMS THE SAME. Same for XGBOOST.
+
