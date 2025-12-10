@@ -683,7 +683,7 @@ for(model in fullplotshap){
 }
 ```
 
-First of all, we observe that ESR1 expression ("counts") is always the most important feature and shows a relatively much higher mean SHAP value than the other features. This is especially true for the alternative classifications and when the algorithm employed is RF or XGBoost (most marked for XGBoost). The only exception is for the "10-50%" category ("ModPos" here) of the traditional IHC classification for which ESR1 expression is the third most important feature (but its SHAP value is not very different than those of the two most important features).
+First of all, we observe that ESR1 expression ("counts") is always the most important feature and shows a relatively much higher mean SHAP value than the other features. This is especially true for the alternative classifications and when the algorithm employed is RF or XGBoost (most marked for RF). The only exception is for the "10-50%" category ("ModPos" here) of the traditional IHC classification for which ESR1 expression is the third most important feature (but its SHAP value is not very different than those of the two most important features).
 
 Now we can check what are the most important features across all classes, averaging the per-class SHAP values for each model type, for each classification. Plots of the 10 most influent (important) features can be produced as well:
 
@@ -789,10 +789,11 @@ Based on these values we can generate a heatmap correlating the three classifica
 # Defining a color gradient
 heatcol <- colorRampPalette(RColorBrewer::brewer.pal(9,"YlOrRd"))(50)
 # Heatmap
-pheatmap::pheatmap(overallshap, border_color=NA, fontsize_col=13, angle_col=45, color = heatcol)
+pheatmap::pheatmap(overallshap, treeheight_row = 100, border_color=NA, fontsize_col=13, angle_col=45, color = heatcol)
+# Note that it can be worth externally diminishing the contrast of this plot in order to better visualize the differences of colors
 ```
 
-Until now we have explored the mean absolute SHAP values at different levels (per class, per model, per classification). These represented the magnitude of the feature effects, i.e., the importance (or influence). But the direction of the effect is also worth exploring. The direction is given by the (mean) raw SHAP values. So now we will directly compute the overall mean raw SHAP values for each classification, by applying the same steps of averaging and normalization previously employed for exploring the magnitude. In that case the sum used in the normalization is not the sum of the mean raw SHAP values but the sum of the mean absolute SHAP values!
+Until now, we have explored the mean absolute SHAP values at different levels (per class, per model, per classification). These represented the magnitude of the feature effects, i.e., the importance (or influence). But the direction of the effect is also worth exploring. The direction is given by the (mean) raw SHAP values. So now we will directly compute the overall mean raw SHAP values for each classification, by applying the same steps of averaging and normalization previously employed for exploring the magnitude. In that case the sum used in the normalization is not the sum of the mean raw SHAP values but the sum of the mean absolute SHAP values!
 
 ```{r, fig.height=5, fig.width=10, out.width="100%"}
 ## List containing, for each classification, the overall mean raw SHAP values

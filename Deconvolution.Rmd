@@ -123,7 +123,7 @@ for(i in seq(1, length(plotlist)-1, by = 6)){
 plotlist[[19]]
 ```
 
-The correlations with ESR1 are significant for all cell types except for the endothelial cells. The significant correlations are always negative. All correlations range from 0.13 to 0.40 so that we can conclude that there is low-to-moderate correlation between ESR1 expression and the abundance scores for the different cell types.
+The correlations with ESR1 are significant for all cell types except for the endothelial cells. The significant correlations are always negative. All correlations range from 0.13 to 0.40 so that we can conclude that there is weak correlation between ESR1 expression and the abundance scores for the different cell types.
 Interestingly, the relationships seem not to be a single linear relationship, confirming the use of Spearman's correlations. In particular, we observe that for read counts inferior to approximately 6 the relative abundances increase whereas for higher read counts those decrease. It can be illustrated by mean of a broken stick regression: 
 
 ```{r, fig.height=5, fig.width=10, out.width="100%"}
