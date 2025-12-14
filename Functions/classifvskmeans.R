@@ -3,9 +3,12 @@
 
 classifvskmeans <- function(dataclassif, classif, datay, type = c("boxplot", "biplot")){
   
-  type <- match.arg(type) # Ensure only "boxplot" or "biplot" can be passed
+  type <- match.arg(type) # Ensures only "boxplot" or "biplot" can be passed
   
-  if(classif == "wardD2_3"){ # Set the correct comparison depending on the cluster number
+  source(file = "colplotclust.R") # This function is needed
+  source(file = "plotclust.R") # This function is needed 
+  
+  if(classif == "wardD2_3"){ # Sets the correct comparison depending on the cluster number
     k = 3
   }
   else{

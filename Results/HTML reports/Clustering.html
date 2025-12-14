@@ -455,6 +455,7 @@ library(cowplot)
 # Loading functions
 source(file = &quot;plotclust.R&quot;)
 source(file = &quot;colplotclust.R&quot;)
+source(file = &quot;classifvskmeans.R&quot;)
 source(file = &quot;grouptest.R&quot;)</code></pre>
 <p>We load the data that will be used:</p>
 <pre class="r"><code># Loading the &#39;countsER&#39; table
@@ -643,9 +644,6 @@ groups &lt;- groups %&gt;% mutate(
   complete2=as.factor(c(&quot;ModToHigh&quot;, &quot;LowToMod&quot;)[complete2])# No need to reorder the levels
   )
 
-# Loading the function &#39;colplotclust&#39;
-source(file = &quot;colplotclust.R&quot;)
-
 # Visualizing the four classifications using boxplots and bivariate plots
 for(classif in colnames(groups)){
   
@@ -806,10 +804,6 @@ groups &lt;- groups %&gt;% mutate(
   # Kmeans with two groups
   kmeans2=as.factor(c(&quot;LowToMod&quot;, &quot;ModToHigh&quot;)[kmeans2])# No need to reorder the levels
 )
-
-
-# Loading the custom function &#39;classifvskmeans&#39;
-source(file = &quot;classifvskmeans.R&quot;)
 
 # Visualizing and comparing the classifications (hierachical clustering vs Kmeans) using boxplots
 for(classif in colnames(groups)[1:4]){

@@ -6,6 +6,8 @@ mlmodel <- function(train, test=NULL, model=c("svmLinear", "svmRadial", "rf", "x
   if(!is.null(outfile)){sink(outfile)} # Connects to a file in which printed results will be sent, only if such file is specified
   
   model <- match.arg(model) # Ensures that only "svmLinear", "svmRadial", "rf", or "xgbTree" can be passed
+  source(file = "colplotclust.R") # This function is needed
+  
   var <- colnames(train)[ncol(train)] # Name of the classification of interest
   
   # Defining the evaluation metric for selecting the best hyperparameters, depending on whether the classification is binary or not

@@ -38,6 +38,7 @@ library(cowplot)
 # Loading functions
 source(file = "plotclust.R")
 source(file = "colplotclust.R")
+source(file = "classifvskmeans.R")
 source(file = "grouptest.R")
 ```
 
@@ -145,9 +146,6 @@ groups <- groups %>% mutate(
   # Complete with two groups
   complete2=as.factor(c("ModToHigh", "LowToMod")[complete2])# No need to reorder the levels
   )
-
-# Loading the function 'colplotclust'
-source(file = "colplotclust.R")
 
 # Visualizing the four classifications using boxplots and bivariate plots
 for(classif in colnames(groups)){
@@ -264,10 +262,6 @@ groups <- groups %>% mutate(
   # Kmeans with two groups
   kmeans2=as.factor(c("LowToMod", "ModToHigh")[kmeans2])# No need to reorder the levels
 )
-
-
-# Loading the custom function 'classifvskmeans'
-source(file = "classifvskmeans.R")
 
 # Visualizing and comparing the classifications (hierachical clustering vs Kmeans) using boxplots
 for(classif in colnames(groups)[1:4]){

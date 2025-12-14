@@ -37,7 +37,6 @@ library(dplyr)
 library(pROC)
 
 # Loading functions
-source(file = "colplotclust.R")
 source(file = "mlmodel.R")
 source(file = "compMLmodels.R")
 source(file = "plotshap.R")
