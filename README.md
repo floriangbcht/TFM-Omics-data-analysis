@@ -42,7 +42,7 @@ The **"Function"** folder includes the following files **(these functions must b
 The **"Results"** folder contains three sub-folders, **"HTML reports"**, **"Deconvolution files"**, and **"Supervised ML files"**. **"HTML reports"** includes the reports generated from the *.Rmd* documents in *.html* format. **"Deconvolution files"** includes the results of among-group comparison tests based on the abundance scores (independently for each immunological feature) for all investigated classifications. **"Supervised ML files"** includes the cross-validation results from training the models using the selected classifications.
 
 
-**WARNING: SOME FILES ARE NOT PROVIDED BECAUSE OF EXCEEDING MAXIMUM FILE SIZE ALLOWED ON GITHUB BUT ARE HERE DESCRIBED ANYWAY**
+**WARNING: SOME FILES ARE NOT PROVIDED BECAUSE OF EXCEEDING MAXIMUM FILE SIZE ALLOWED ON GITHUB BUT ARE HERE DESCRIBED ANYWAY:**
 - **data.rda** corresponds to the prepared *SummarizedExperiment* object obtained just after the initial data download. These are the unprocessed expression data and sample information.
 - **dataclean.rda** corresponds to the *SummarizedExperiment* object resulting from the preprocessing step.
 
