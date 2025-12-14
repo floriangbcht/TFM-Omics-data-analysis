@@ -38,6 +38,7 @@ The **"Function"** folder includes the following files:
 - **mlmodel.R** is a custom function for training ML models and computing CV and test performance metrics. Requires *colplotclust()*.
 - **compMLmodels.R** is a custom function for comparing different ML models (from a list of trained ML model with the function *mlmodel()*), using the balanced accuracy as evaluation metric.
 - **plotshap.R** is a custom function for generating mean SHAP magnitudes and directions (averages across all predictions) and computing a per-class feature importance plot for a specific model.
+**These functions must be placed in the chosen working directory for the code to work properly**
 
 The **"Results"** folder contains three sub-folders, **"HTML reports"**, **"Deconvolution files"**, and **"Supervised ML files"**. **"HTML reports"** includes the reports generated from the *.Rmd* documents in *.html* format. **"Deconvolution files"** includes the results of among-group comparison tests based on the abundance scores (independently for each immunological feature) for all investigated classifications. **"Supervised ML files"** includes the cross-validation results from training the models using the selected classifications.
 
