@@ -35,7 +35,7 @@ The **"Function"** folder includes the following files:
 - **plotclust.R** is a custom function for for generating a boxplot for a specific variable (ESR1 expression or other) or a bivariate plot that can be of any variable Y vs. variable X (or specifically ESR1 expression vs. index), depending on the classification.
 - **classifvskmeans.R** is a custom function for comparing the HCLUST-derived alternative classifications with those derived from K-means (for these specific data). Requires *plotclust()* and *colplotclust()*.
 - **grouptest.R** is a custom function for computing between group differences according to the number of categories, data normality, and homoscedasticity. It includes arguments for computing other comparative results.
-- **mlmodel.R** is a custom function for training ML models and computing CV and test performance metrics. Requires*colplotclust()*.
+- **mlmodel.R** is a custom function for training ML models and computing CV and test performance metrics. Requires *colplotclust()*.
 - **compMLmodels.R** is a custom function for comparing different ML models (from a list of trained ML model with the function *mlmodel()*), using the balanced accuracy as evaluation metric.
 - **plotshap.R** is a custom function for generating mean SHAP magnitudes and directions (averages across all predictions) and computing a per-class feature importance plot for a specific model.
 
