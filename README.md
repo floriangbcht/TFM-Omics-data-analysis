@@ -30,19 +30,19 @@ Here is a breakdown of the included files:
 
 **Importantly, The "GDC data/TCGA-BRCA" folder contains two sub-folders, "Transcriptome_Profiling/Gene_Expression_Quantification" and "Clinical/Clinical_Supplement", including all files of the initial data download, therefore corresponding to the base TCGA-BRCA transcriptomic data and clinical information used in the present project.** 
 
-The **"Function"** folder includes the following files:
+The **"Function"** folder includes the following files **(these functions must be placed in the chosen working directory for the code to work properly)**:
 - **colplotclust.R** is a custom function for attributing colors to individual points or whole category depending on the classification.
 - **plotclust.R** is a custom function for for generating a boxplot for a specific variable (ESR1 expression or other) or a bivariate plot that can be of any variable Y vs. variable X (or specifically ESR1 expression vs. index), depending on the classification.
 - **classifvskmeans.R** is a custom function for comparing the HCLUST-derived alternative classifications with those derived from K-means (for these specific data). Requires *plotclust()* and *colplotclust()*.
 - **grouptest.R** is a custom function for computing between group differences according to the number of categories, data normality, and homoscedasticity. It includes arguments for computing other comparative results.
-- **mlmodel.R** is a custom function for training ML models and computing CV and test performance metrics. Requires*colplotclust()*.
+- **mlmodel.R** is a custom function for training ML models and computing CV and test performance metrics. Requires *colplotclust()*.
 - **compMLmodels.R** is a custom function for comparing different ML models (from a list of trained ML model with the function *mlmodel()*), using the balanced accuracy as evaluation metric.
 - **plotshap.R** is a custom function for generating mean SHAP magnitudes and directions (averages across all predictions) and computing a per-class feature importance plot for a specific model.
 
 The **"Results"** folder contains three sub-folders, **"HTML reports"**, **"Deconvolution files"**, and **"Supervised ML files"**. **"HTML reports"** includes the reports generated from the *.Rmd* documents in *.html* format. **"Deconvolution files"** includes the results of among-group comparison tests based on the abundance scores (independently for each immunological feature) for all investigated classifications. **"Supervised ML files"** includes the cross-validation results from training the models using the selected classifications.
 
 
-**WARNING: SOME FILES ARE NOT PROVIDED BECAUSE OF EXCEEDING MAXIMUM FILE SIZE ALLOWED ON GITHUB BUT ARE HERE DESCRIBED ANYWAY**
+**WARNING: SOME FILES ARE NOT PROVIDED BECAUSE OF EXCEEDING MAXIMUM FILE SIZE ALLOWED ON GITHUB BUT ARE HERE DESCRIBED ANYWAY:**
 - **data.rda** corresponds to the prepared *SummarizedExperiment* object obtained just after the initial data download. These are the unprocessed expression data and sample information.
 - **dataclean.rda** corresponds to the *SummarizedExperiment* object resulting from the preprocessing step.
 
